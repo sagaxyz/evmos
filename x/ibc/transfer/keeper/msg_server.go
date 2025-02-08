@@ -47,13 +47,18 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 	// use native denom or contract address
 	denom := strings.TrimPrefix(msg.Token.Denom, erc20types.ModuleName+"/")
 
+	ctx.Logger().Info("in Transfer", "denom", denom)
+
 	pairID := k.erc20Keeper.GetTokenPairID(ctx, denom)
 	if len(pairID) == 0 {
 		// no-op: token is not registered so we can proceed with regular transfer
 		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
 	}
 
+	ctx.Logger().Info("in Transfer", "pairid", pairID)
+
 	pair, _ := k.erc20Keeper.GetTokenPair(ctx, pairID)
+	ctx.Logger().Info("in Transfer", "pair enabled", pair.Enabled)
 	if !pair.Enabled {
 		// no-op: pair is not enabled so we can proceed with regular transfer
 		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
@@ -66,14 +71,18 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
 	}
 
+	ctx.Logger().Info("in Transfer: erc20 enabled")
+
 	// update the msg denom to the token pair denom
 	msg.Token.Denom = pair.Denom
 
 	if !pair.IsNativeERC20() {
 		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
 	}
+	ctx.Logger().Info("in Transfer: not native erc20")
 	// if the user has enough balance of the Cosmos representation, then we don't need to Convert
 	balance := k.bankKeeper.GetBalance(ctx, sender, pair.Denom)
+	ctx.Logger().Info("in Transfer", "balance", balance.Amount.String())
 	if balance.Amount.GTE(msg.Token.Amount) {
 
 		defer func() {
@@ -102,6 +111,7 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 
 	// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
 	if _, err := k.erc20Keeper.ConvertERC20(sdk.WrapSDKContext(ctx), msgConvertERC20); err != nil {
+		ctx.Logger().Info("in Transfer: convert erc20 failed", "err", err)
 		return nil, err
 	}
 
@@ -114,6 +124,8 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 			},
 		)
 	}()
+
+	ctx.Logger().Info("in Transfer", "final msg", *msg)
 
 	return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
 }
