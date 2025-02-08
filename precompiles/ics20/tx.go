@@ -35,11 +35,12 @@ func (p *Precompile) Transfer(
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
+	ctx.Logger().Info("ics20.Transfer", "origin", origin.String(), "contract", contract.Address().String())
 	msg, sender, err := NewMsgTransfer(method, args)
 	if err != nil {
 		return nil, err
 	}
-
+	ctx.Logger().Info("channel check", "source port", msg.SourcePort, "source channel", msg.SourceChannel)
 	// check if channel exists and is open
 	if !p.channelKeeper.HasChannel(ctx, msg.SourcePort, msg.SourceChannel) {
 		return nil, errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "port ID (%s) channel ID (%s)", msg.SourcePort, msg.SourceChannel)
@@ -47,6 +48,8 @@ func (p *Precompile) Transfer(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == sender
+
+	ctx.Logger().Info("address check", "caller", contract.CallerAddress, "sender", sender)
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if !isCallerSender && origin != sender {
@@ -56,6 +59,7 @@ func (p *Precompile) Transfer(
 	// no need to have authorization when the contract caller is the same as origin (owner of funds)
 	// and the sender is the origin
 	resp, expiration, err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, p.AuthzKeeper, msg)
+	ctx.Logger().Info("after auth check", "resp", resp, "expiration", expiration, "err", err)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +68,8 @@ func (p *Precompile) Transfer(
 	if err != nil {
 		return nil, err
 	}
+
+	ctx.Logger().Info("after transfer", "res", res)
 
 	if err := UpdateGrantIfNeeded(ctx, contract, p.AuthzKeeper, origin, expiration, resp); err != nil {
 		return nil, err
