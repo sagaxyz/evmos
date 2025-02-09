@@ -266,8 +266,9 @@ func (evm *EVM) RunPrecompiledContract(
 	value *big.Int,
 	readOnly bool,
 ) (ret []byte, remainingGas uint64, err error) {
+	fmt.Printf("Precompiled contract before execution: address=%s input=%x\n", p.Address(), input)
 	ret, remainingGas, err = runPrecompiledContract(evm, p, caller, input, suppliedGas, value, readOnly)
-	fmt.Printf("Precompiled contract execution: address=%s input=%x output=%x gas=%d err=%v\n", p.Address(), input, ret, suppliedGas-remainingGas, err)
+	fmt.Printf("Precompiled contract after execution: address=%s input=%x output=%x gas=%d err=%v\n", p.Address(), input, ret, suppliedGas-remainingGas, err)
 	return ret, remainingGas, err
 }
 
@@ -287,10 +288,14 @@ func runPrecompiledContract(
 	contract := NewPrecompile(caller, AccountRef(addrCopy), value, suppliedGas)
 	contract.Input = inputCopy
 
+	fmt.Printf("Before RequiredGas call: address=%s input=%x\n", addrCopy, contract.Input)
+
 	gasCost := p.RequiredGas(input)
+	fmt.Printf("After RequiredGas call: gasCost=%d\n", gasCost)
 	if !contract.UseGas(gasCost) {
 		return nil, contract.Gas, ErrOutOfGas
 	}
+	fmt.Printf("UseGas check passed\n")
 
 	output, err := p.Run(evm, contract, readOnly)
 	return output, contract.Gas, err

@@ -319,7 +319,7 @@ func (k *Keeper) ApplyMessageWithConfig(
 		stateDB.SetNonce(sender.Address(), msg.Nonce()+1)
 	} else {
 		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To(), msg.Data(), leftoverGas, msg.Value())
-		ctx.Logger().Info("Call() returned with error", "ret", ret, "leftoverGas", leftoverGas, "vmErr", vmErr)
+		ctx.Logger().Info("Call() returned", "ret", ret, "leftoverGas", leftoverGas, "vmErr", vmErr)
 	}
 
 	refundQuotient := params.RefundQuotient
