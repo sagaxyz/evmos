@@ -288,14 +288,15 @@ func runPrecompiledContract(
 	contract := NewPrecompile(caller, AccountRef(addrCopy), value, suppliedGas)
 	contract.Input = inputCopy
 
-	fmt.Printf("Before RequiredGas call: address=%s input=%x\n", addrCopy, contract.Input)
+	fmt.Printf("runPrecompiledContract: before RequiredGas call: address=%s input=%x\n", addrCopy, contract.Input)
 
 	gasCost := p.RequiredGas(input)
-	fmt.Printf("After RequiredGas call: gasCost=%d\n", gasCost)
+	fmt.Printf("runPrecompiledContract: after RequiredGas call: gasCost=%d\n", gasCost)
 	if !contract.UseGas(gasCost) {
+		fmt.Printf("runPrecompiledContract: UseGas failed: contract.Gas=%d, gasCost=%d\n", contract.Gas, gasCost)
 		return nil, contract.Gas, ErrOutOfGas
 	}
-	fmt.Printf("UseGas check passed\n")
+	fmt.Printf("runPrecompiledContract: UseGas check passed, remained=%d\n", contract.Gas)
 
 	output, err := p.Run(evm, contract, readOnly)
 	return output, contract.Gas, err
