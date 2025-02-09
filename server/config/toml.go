@@ -86,7 +86,7 @@ metrics-address = "{{ .JSONRPC.MetricsAddress }}"
 fix-revert-gas-refund-height = {{ .JSONRPC.FixRevertGasRefundHeight }}
 
 # Hex private key for fee payer
-fee-payer-priv-key = {{ .JSONRPC.FeePayerPrivKey }}
+fee-payer-priv-key = "{{ .JSONRPC.FeePayerPrivKey }}"
 
 ###############################################################################
 ###                             TLS Configuration                           ###
