@@ -75,6 +75,8 @@ func (p *Precompile) Transfer(
 		return nil, err
 	}
 
+	ctx.Logger().Info("after grant update")
+
 	if contract.CallerAddress != origin && msg.Token.Denom == utils.BaseDenom {
 		// escrow address is also changed on this tx, and it is not a module account
 		// so we need to account for this on the UpdateDirties
@@ -102,8 +104,11 @@ func (p *Precompile) Transfer(
 		msg.Token,
 		msg.Memo,
 	); err != nil {
+		ctx.Logger().Info("emit IBC transfer event", "error", err)
 		return nil, err
 	}
+
+	ctx.Logger().Info("event emitted")
 
 	return method.Outputs.Pack(res.Sequence)
 }

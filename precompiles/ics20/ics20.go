@@ -123,18 +123,24 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 	}
 
 	if err != nil {
+		ctx.Logger().Info("ics20.Run", "error", err)
 		return nil, err
 	}
 
 	cost := ctx.GasMeter().GasConsumed() - initialGas
 
+	ctx.Logger().Info("ics20.Run", "cost", cost, "initialGas", initialGas, "consumed", ctx.GasMeter().GasConsumed())
+
 	if !contract.UseGas(cost) {
+		ctx.Logger().Info("ics20.outofgas", "error", vm.ErrOutOfGas)
 		return nil, vm.ErrOutOfGas
 	}
 
 	if err := p.AddJournalEntries(stateDB, snapshot); err != nil {
 		return nil, err
 	}
+
+	ctx.Logger().Info("ics20.Run", "success", true)
 
 	return bz, nil
 }

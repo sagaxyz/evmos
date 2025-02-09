@@ -266,7 +266,9 @@ func (evm *EVM) RunPrecompiledContract(
 	value *big.Int,
 	readOnly bool,
 ) (ret []byte, remainingGas uint64, err error) {
-	return runPrecompiledContract(evm, p, caller, input, suppliedGas, value, readOnly)
+	ret, remainingGas, err = runPrecompiledContract(evm, p, caller, input, suppliedGas, value, readOnly)
+	fmt.Printf("Precompiled contract execution: address=%s input=%x output=%x gas=%d err=%v\n", p.Address(), input, ret, suppliedGas-remainingGas, err)
+	return ret, remainingGas, err
 }
 
 func runPrecompiledContract(
