@@ -82,7 +82,7 @@ func (suite *BackendTestSuite) SetupTest() {
 	allowUnprotectedTxs := false
 	idxer := indexer.NewKVIndexer(dbm.NewMemDB(), ctx.Logger, clientCtx)
 
-	suite.backend = NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, idxer)
+	suite.backend = NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, idxer, "")
 	suite.backend.cfg.JSONRPC.GasCap = 0
 	suite.backend.cfg.JSONRPC.EVMTimeout = 0
 	suite.backend.cfg.JSONRPC.AllowInsecureUnlock = true

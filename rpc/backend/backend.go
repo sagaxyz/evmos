@@ -5,7 +5,6 @@ package backend
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"time"
 
