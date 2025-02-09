@@ -318,6 +318,7 @@ func (k *Keeper) ApplyMessageWithConfig(
 		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data(), leftoverGas, msg.Value())
 		stateDB.SetNonce(sender.Address(), msg.Nonce()+1)
 	} else {
+		ctx.Logger().Info("Before Call()", "msg", msg)
 		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To(), msg.Data(), leftoverGas, msg.Value())
 		ctx.Logger().Info("Call() returned", "ret", ret, "leftoverGas", leftoverGas, "vmErr", vmErr)
 	}

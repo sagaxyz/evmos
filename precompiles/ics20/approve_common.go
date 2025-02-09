@@ -255,10 +255,15 @@ func UpdateGrant(
 	resp *authz.AcceptResponse,
 ) (err error) {
 	if resp.Delete {
+		ctx.Logger().Info("before DeleteGrant", "grantee", grantee, "granter", granter, "url", TransferMsgURL)
 		err = authzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), TransferMsgURL)
+		ctx.Logger().Info("after DeleteGrant", "err", err)
 	} else if resp.Updated != nil {
 		err = authzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), resp.Updated, expiration)
+		ctx.Logger().Info("after SaveGrant", "err", err)
 	}
+
+	ctx.Logger().Info("after grant update", "err", err)
 
 	if err != nil {
 		return err

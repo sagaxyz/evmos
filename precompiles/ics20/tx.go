@@ -72,6 +72,7 @@ func (p *Precompile) Transfer(
 	ctx.Logger().Info("after transfer", "res", res)
 
 	if err := UpdateGrantIfNeeded(ctx, contract, p.AuthzKeeper, origin, expiration, resp); err != nil {
+		ctx.Logger().Info("update grant failed", "error", err)
 		return nil, err
 	}
 
