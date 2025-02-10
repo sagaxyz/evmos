@@ -410,6 +410,9 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 		}
 	}
 	fmt.Printf("EstimateGasInternal estimation, req=%v, gas=%d\n", req, hi)
+
+	// Add 20% to the gas estimate as a gas estimation issue workaround
+	hi = uint64(float64(hi) * 1.2)
 	return &types.EstimateGasResponse{Gas: hi}, nil
 }
 
