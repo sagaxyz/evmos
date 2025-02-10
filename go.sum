@@ -842,8 +842,8 @@ github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-b
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
 github.com/linxGnu/grocksdb v1.9.2 h1:O3mzvO0wuzQ9mtlHbDrShixyVjVbmuqTjFrzlf43wZ8=
 github.com/linxGnu/grocksdb v1.9.2/go.mod h1:QYiYypR2d4v63Wj1adOOfzglnoII0gLj3PNh4fZkcFA=
-github.com/luckychess/cosmos-sdk v0.47.12-evmos.2-debug.1 h1:9dK+lh0wJefwkq6MWwgD6MlA7MFNmWUN1r3h0h3kWSU=
-github.com/luckychess/cosmos-sdk v0.47.12-evmos.2-debug.1/go.mod h1:ADjORYzUQqQv/FxDi0H0K5gW/rAk1CiDR3ZKsExfJV0=
+github.com/luckychess/cosmos-sdk v0.47.12-evmos.2-debug.4 h1:5rGlgJYnVByFUju6XCqnlNDc676jEGszXLFewVvGHEA=
+github.com/luckychess/cosmos-sdk v0.47.12-evmos.2-debug.4/go.mod h1:ADjORYzUQqQv/FxDi0H0K5gW/rAk1CiDR3ZKsExfJV0=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
 github.com/magiconair/properties v1.8.7/go.mod h1:Dhd985XPs7jluiymwWYZ0G4Z61jb3vdS329zhj2hYo0=
