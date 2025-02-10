@@ -2,12 +2,15 @@ package backend
 
 import (
 	"fmt"
+	"math/big"
 
 	sdkmath "cosmossdk.io/math"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	rpctypes "github.com/evmos/evmos/v19/rpc/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -34,20 +37,47 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 	}
 	txBuilder.SetExtensionOptions(option)
 
-	// Set fees from the ethereum message
+	// Set gas limit from the ethereum message
+	gas := ethereumMsg.GetGas()
+	txBuilder.SetGasLimit(gas)
+
+	// Get fees and set them in the tx
 	txData, err := evmtypes.UnpackTxData(ethereumMsg.Data)
 	if err != nil {
+		err = fmt.Errorf("failed to unpack eth message: %w", err)
 		return
 	}
 	fees := make(sdk.Coins, 0, 1)
-	feeAmt := sdkmath.NewIntFromBigInt(txData.Fee())
-	if feeAmt.Sign() > 0 {
+	txFee := txData.Fee()
+	var feeAmt sdkmath.Int
+	if txFee.Sign() > 0 { // Use fees provided in the ethereum message
+		feeAmt = sdkmath.NewIntFromBigInt(txFee)
+	} else { // No fees provided by the user
+		// Get latest block
+		var blockRes *tmrpctypes.ResultBlockResults
+		blockRes, err = b.TendermintBlockResultByNumber(nil)
+		if err != nil {
+			err = fmt.Errorf("failed to query latest block: %w", err)
+			return
+		}
+		// Get base fee
+		var res *evmtypes.QueryBaseFeeResponse
+		res, err = b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
+		if err != nil || res.BaseFee == nil {
+			err = fmt.Errorf("failed to query base fee: %w", err)
+			return
+		}
+		// Calculate total fee amount
+		if res.BaseFee.Sign() > 0 {
+			gasInt := big.NewInt(0).SetUint64(gas)
+			baseFee := res.BaseFee.BigInt()
+			feeAmt = sdkmath.NewIntFromBigInt(big.NewInt(0).Mul(baseFee, gasInt))
+		}
+	}
+	if !feeAmt.IsNil() && feeAmt.Sign() > 0 {
 		fees = append(fees, sdk.NewCoin(evmDenom, feeAmt))
 	}
 	txBuilder.SetFeeAmount(fees)
-
-	// Set gas limit from the ethereum message
-	txBuilder.SetGasLimit(ethereumMsg.GetGas())
 
 	// A valid msg should have empty From field
 	ethereumMsg.From = ""
