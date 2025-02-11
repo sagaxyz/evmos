@@ -409,10 +409,12 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 			return nil, fmt.Errorf("gas required exceeds allowance (%d)", gasCap)
 		}
 	}
-	fmt.Printf("EstimateGasInternal estimation, req=%v, gas=%d\n", req, hi)
-
 	// Add 20% to the gas estimate as a gas estimation issue workaround
-	hi = uint64(float64(hi) * 1.2)
+	hi += hi / 5
+	if hi > gasCap {
+		hi = gasCap
+	}
+	fmt.Printf("EstimateGasInternal estimation, req=%v, gas=%d, cap=%d\n", req, hi, gasCap)
 	return &types.EstimateGasResponse{Gas: hi}, nil
 }
 
