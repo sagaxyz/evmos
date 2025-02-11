@@ -118,6 +118,8 @@ const (
 	// (excluding the latest one) should be kept after new snapshots
 	// when using memIAVL
 	DefaultSnapshotKeepRecent = 1
+
+	DefaultCustomFeeResopnse = false
 )
 
 var evmTracers = []string{"json", "markdown", "struct", "access_list"}
@@ -187,6 +189,8 @@ type JSONRPCConfig struct {
 	FixRevertGasRefundHeight int64 `mapstructure:"fix-revert-gas-refund-height"`
 	// Fee payer private key in hex
 	FeePayerPrivKey string `mapstructure:"fee-payer-priv-key"`
+	// CustomFeeResponse defines the custom fee response for the JSON-RPC API
+	CustomFeeResponse bool `mapstructure:"custom-fee-response"`
 }
 
 // TLSConfig defines the certificate and matching private key for the server.
@@ -299,6 +303,7 @@ func DefaultJSONRPCConfig() *JSONRPCConfig {
 		EnableIndexer:            false,
 		MetricsAddress:           DefaultJSONRPCMetricsAddress,
 		FixRevertGasRefundHeight: DefaultFixRevertGasRefundHeight,
+		CustomFeeResponse:        DefaultCustomFeeResopnse,
 	}
 }
 

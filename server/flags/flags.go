@@ -59,6 +59,7 @@ const (
 	JSONRPCEnableMetrics            = "metrics"
 	JSONRPCFixRevertGasRefundHeight = "json-rpc.fix-revert-gas-refund-height"
 	JSONRPCFeePayerPrivKey          = "json-rpc.fee-payer-priv-key"
+	JSONRPCCustomFeeResponse        = "json-rpc.custom-fee-response"
 )
 
 // EVM flags

@@ -4,6 +4,7 @@ package eth
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
@@ -118,17 +119,19 @@ var _ EthereumAPI = (*PublicAPI)(nil)
 
 // PublicAPI is the eth_ prefixed set of APIs in the Web3 JSON-RPC spec.
 type PublicAPI struct {
-	ctx     context.Context
-	logger  log.Logger
-	backend backend.EVMBackend
+	ctx               context.Context
+	logger            log.Logger
+	backend           backend.EVMBackend
+	customFeeResponse bool
 }
 
 // NewPublicAPI creates an instance of the public ETH Web3 API.
-func NewPublicAPI(logger log.Logger, backend backend.EVMBackend) *PublicAPI {
+func NewPublicAPI(logger log.Logger, backend backend.EVMBackend, customFeeResponse bool) *PublicAPI {
 	api := &PublicAPI{
-		ctx:     context.Background(),
-		logger:  logger.With("client", "json-rpc"),
-		backend: backend,
+		ctx:               context.Background(),
+		logger:            logger.With("client", "json-rpc"),
+		backend:           backend,
+		customFeeResponse: customFeeResponse,
 	}
 
 	return api
@@ -147,7 +150,17 @@ func (e *PublicAPI) BlockNumber() (hexutil.Uint64, error) {
 // GetBlockByNumber returns the block identified by number.
 func (e *PublicAPI) GetBlockByNumber(ethBlockNum rpctypes.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	e.logger.Debug("eth_getBlockByNumber", "number", ethBlockNum, "full", fullTx)
-	return e.backend.GetBlockByNumber(ethBlockNum, fullTx)
+	res, err := e.backend.GetBlockByNumber(ethBlockNum, fullTx)
+	if err != nil {
+		return nil, err
+	}
+
+	if e.customFeeResponse {
+		result := big.NewInt(0)
+		res["baseFeePerGas"] = (*hexutil.Big)(result)
+		return res, nil
+	}
+	return res, nil
 }
 
 // GetBlockByHash returns the block identified by hash.
@@ -301,6 +314,10 @@ func (e *PublicAPI) ProtocolVersion() hexutil.Uint {
 // GasPrice returns the current gas price based on Ethermint's gas price oracle.
 func (e *PublicAPI) GasPrice() (*hexutil.Big, error) {
 	e.logger.Debug("eth_gasPrice")
+	if e.customFeeResponse {
+		result := big.NewInt(0)
+		return (*hexutil.Big)(result), nil
+	}
 	return e.backend.GasPrice()
 }
 
