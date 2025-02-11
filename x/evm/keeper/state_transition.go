@@ -337,6 +337,7 @@ func (k *Keeper) ApplyMessageWithConfig(
 	// refund gas
 	temporaryGasUsed := msg.Gas() - leftoverGas
 	refund := GasToRefund(stateDB.GetRefund(), temporaryGasUsed, refundQuotient)
+	k.Logger(ctx).Info("Refund", "refund", refund, "refundQuotient", refundQuotient, "temporaryGasUsed", temporaryGasUsed)
 
 	// update leftoverGas and temporaryGasUsed with refund amount
 	leftoverGas += refund
