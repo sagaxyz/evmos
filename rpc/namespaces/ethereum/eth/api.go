@@ -150,7 +150,17 @@ func (e *PublicAPI) BlockNumber() (hexutil.Uint64, error) {
 // GetBlockByNumber returns the block identified by number.
 func (e *PublicAPI) GetBlockByNumber(ethBlockNum rpctypes.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	e.logger.Debug("eth_getBlockByNumber", "number", ethBlockNum, "full", fullTx)
-	return e.backend.GetBlockByNumber(ethBlockNum, fullTx)
+	res, err := e.backend.GetBlockByNumber(ethBlockNum, fullTx)
+	if err != nil {
+		return nil, err
+	}
+
+	if e.customFeeResponse {
+		result := big.NewInt(0)
+		res["baseFeePerGas"] = (*hexutil.Big)(result)
+		return res, nil
+	}
+	return res, nil
 }
 
 // GetBlockByHash returns the block identified by hash.
