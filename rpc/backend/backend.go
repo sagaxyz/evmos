@@ -154,6 +154,8 @@ func NewBackend(
 	indexer evmostypes.EVMTxIndexer,
 	feePayerPrivKey string,
 ) *Backend {
+	logger = logger.With("module", "backend")
+
 	chainID, err := evmostypes.ParseChainID(clientCtx.ChainID)
 	if err != nil {
 		panic(err)
@@ -173,13 +175,14 @@ func NewBackend(
 		pk = &secp256k1.PrivKey{
 			Key: privKeyBytes,
 		}
+		logger.Info("node has fee payer signing enabled")
 	}
 
 	return &Backend{
 		ctx:                 context.Background(),
 		clientCtx:           clientCtx,
 		queryClient:         rpctypes.NewQueryClient(clientCtx),
-		logger:              logger.With("module", "backend"),
+		logger:              logger,
 		chainID:             chainID,
 		cfg:                 appConf,
 		allowUnprotectedTxs: allowUnprotectedTxs,
