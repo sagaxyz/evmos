@@ -410,8 +410,8 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 		}
 	}
 
-	// Add 20% to the gas estimate as a gas estimation issue workaround
-	hi += hi / 5
+	// Add 10% to the gas estimate as a gas estimation issue workaround
+	hi += hi / 10
 	if hi > gasCap {
 		hi = gasCap
 	}
