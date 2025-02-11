@@ -10,11 +10,11 @@ import (
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	rpctypes "github.com/evmos/evmos/v19/rpc/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	rpctypes "github.com/evmos/evmos/v19/rpc/types"
 	evmtypes "github.com/evmos/evmos/v19/x/evm/types"
 )
 
