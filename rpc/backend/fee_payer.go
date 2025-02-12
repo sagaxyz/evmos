@@ -18,6 +18,31 @@ import (
 	evmtypes "github.com/evmos/evmos/v19/x/evm/types"
 )
 
+func (b *Backend) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err error) {
+	// Get current base fee
+	var blockRes *tmrpctypes.ResultBlockResults
+	blockRes, err = b.TendermintBlockResultByNumber(nil)
+	if err != nil {
+		err = fmt.Errorf("failed to query latest block: %w", err)
+		return
+	}
+	var res *evmtypes.QueryBaseFeeResponse
+	res, err = b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
+	if err != nil || res.BaseFee == nil {
+		err = fmt.Errorf("failed to query base fee: %w", err)
+		return
+	}
+	if res.BaseFee.Sign() == 0 {
+		sdkmath.NewInt(0)
+		return
+	}
+
+	gasInt := big.NewInt(0).SetUint64(gas)
+	baseFee := res.BaseFee.BigInt()
+	amount = sdkmath.NewIntFromBigInt(big.NewInt(0).Mul(baseFee, gasInt))
+	return
+}
+
 func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.MsgEthereumTx, evmDenom string) (tx authsigning.Tx, err error) {
 	if b.feePayerPrivKey == nil {
 		panic("no fee payer priv key")
@@ -42,26 +67,13 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 	txBuilder.SetGasLimit(gas)
 
 	// Overwrite user-provided fees
-	var blockRes *tmrpctypes.ResultBlockResults
-	blockRes, err = b.TendermintBlockResultByNumber(nil)
+	feeAmt, err := b.calculateFeePayerFees(gas)
 	if err != nil {
-		err = fmt.Errorf("failed to query latest block: %w", err)
-		return
-	}
-	var res *evmtypes.QueryBaseFeeResponse
-	res, err = b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
-	if err != nil || res.BaseFee == nil {
-		err = fmt.Errorf("failed to query base fee: %w", err)
 		return
 	}
 	fees := make(sdk.Coins, 0, 1)
-	if res.BaseFee.Sign() > 0 {
-		gasInt := big.NewInt(0).SetUint64(gas)
-		baseFee := res.BaseFee.BigInt()
-		feeAmt := sdkmath.NewIntFromBigInt(big.NewInt(0).Mul(baseFee, gasInt))
-		if feeAmt.Sign() > 0 {
-			fees = append(fees, sdk.NewCoin(evmDenom, feeAmt))
-		}
+	if feeAmt.Sign() > 0 {
+		fees = append(fees, sdk.NewCoin(evmDenom, feeAmt))
 	}
 	txBuilder.SetFeeAmount(fees)
 
