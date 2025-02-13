@@ -3,6 +3,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math/big"
 
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -175,6 +176,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*t
 		k.ResetGasMeterAndConsumeGas(tmpCtx, tmpCtx.GasMeter().Limit())
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
+	fmt.Printf("XXX: res=%s err=%s\n", res, err)
 
 	logs := types.LogsToEthereum(res.Logs)
 
