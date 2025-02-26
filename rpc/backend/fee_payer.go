@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -13,21 +12,23 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/common/math"
 	rpctypes "github.com/evmos/evmos/v19/rpc/types"
 	evmtypes "github.com/evmos/evmos/v19/x/evm/types"
+	feemarkettypes "github.com/evmos/evmos/v19/x/feemarket/types"
 )
+
+var baseFeeDeltaBlocks = big.NewInt(2)
 
 func (b *Backend) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err error) {
 	// Get current base fee
-	var blockRes *tmrpctypes.ResultBlockResults
-	blockRes, err = b.TendermintBlockResultByNumber(nil)
+	var baseFee *big.Int
+	blockRes, err := b.TendermintBlockResultByNumber(nil)
 	if err != nil {
 		err = fmt.Errorf("failed to query latest block: %w", err)
 		return
 	}
-	var res *evmtypes.QueryBaseFeeResponse
-	res, err = b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
+	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
 	if err != nil || res.BaseFee == nil {
 		err = fmt.Errorf("failed to query base fee: %w", err)
 		return
@@ -36,10 +37,31 @@ func (b *Backend) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err err
 		sdkmath.NewInt(0)
 		return
 	}
+	baseFee = res.BaseFee.BigInt()
 
-	gasInt := big.NewInt(0).SetUint64(gas)
-	baseFee := res.BaseFee.BigInt()
-	amount = sdkmath.NewIntFromBigInt(big.NewInt(0).Mul(baseFee, gasInt))
+	// Get chain params
+	params, err := b.queryClient.FeeMarket.Params(b.ctx, &feemarkettypes.QueryParamsRequest{})
+	if err != nil {
+		err = fmt.Errorf("failed to query params: %w", err)
+		return
+	}
+
+	// Adjust to cover maximum increase of base fee in `baseFeeDeltaBlocks` blocks
+	// (X(a+1)^b)/a^b where
+	//   X is the original base fee
+	//   a is the base fee change denominator
+	//   b is `baseFeeDeltaBlocks`
+	baseFeeChangeDenominator := big.NewInt(int64(params.Params.BaseFeeChangeDenominator))
+	d := new(big.Int).Exp(baseFeeChangeDenominator, baseFeeDeltaBlocks, nil)
+	m := new(big.Int).Exp(new(big.Int).Add(baseFeeChangeDenominator, big.NewInt(1)), baseFeeDeltaBlocks, nil)
+	newBaseFee := new(big.Int).Div(new(big.Int).Mul(baseFee, m), d)
+	baseFee = math.BigMax(
+		newBaseFee,
+		new(big.Int).Mul(big.NewInt(1), baseFeeDeltaBlocks), // Minimum delta is 1
+	)
+
+	gasInt := new(big.Int).SetUint64(gas)
+	amount = sdkmath.NewIntFromBigInt(new(big.Int).Mul(baseFee, gasInt))
 	return
 }
 
@@ -91,8 +113,7 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 	txBuilder.SetFeePayer(feepayerAddress)
 
 	// Query the account number and sequence from the remote chain
-	accountRetriever := authtypes.AccountRetriever{}
-	accountNumber, sequence, err := accountRetriever.GetAccountNumberSequence(clientCtx, feepayerAddress)
+	accountNumber, sequence, err := clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, feepayerAddress)
 	if err != nil {
 		err = fmt.Errorf("failed to get account: %w", err)
 		return
