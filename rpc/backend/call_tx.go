@@ -137,11 +137,13 @@ func (b *Backend) SendRawTransaction(data hexutil.Bytes) (common.Hash, error) {
 	}
 
 	var cosmosTx signing.Tx
-	if b.feePayerPrivKey != nil {
-		cosmosTx, err = b.feePayerTx(b.clientCtx, ethereumTx, res.Params.EvmDenom)
-	} else {
-		cosmosTx, err = ethereumTx.BuildTx(b.clientCtx.TxConfig.NewTxBuilder(), res.Params.EvmDenom)
+	if b.feePayer != nil {
+		ret := b.feePayer.enqueueMsg(ethereumTx, res.Params.EvmDenom)
+		res := <-ret
+		return res.TxHash, res.Error
 	}
+
+	cosmosTx, err = ethereumTx.BuildTx(b.clientCtx.TxConfig.NewTxBuilder(), res.Params.EvmDenom)
 	if err != nil {
 		b.logger.Error("failed to build cosmos tx", "error", err.Error())
 		return common.Hash{}, err

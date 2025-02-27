@@ -65,7 +65,7 @@ func (suite *BackendTestSuite) TestBlockNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			blockNumber, err := suite.backend.BlockNumber()
@@ -195,7 +195,7 @@ func (suite *BackendTestSuite) TestGetBlockByNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(tc.blockNumber, math.NewIntFromBigInt(tc.baseFee), tc.validator, tc.txBz)
 
 			block, err := suite.backend.GetBlockByNumber(tc.blockNumber, tc.fullTx)
@@ -341,7 +341,7 @@ func (suite *BackendTestSuite) TestGetBlockByHash() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(tc.hash, math.NewIntFromBigInt(tc.baseFee), tc.validator, tc.txBz)
 
 			block, err := suite.backend.GetBlockByHash(tc.hash, tc.fullTx)
@@ -435,7 +435,7 @@ func (suite *BackendTestSuite) TestGetBlockTransactionCountByHash() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			tc.registerMock(tc.hash)
 			count := suite.backend.GetBlockTransactionCountByHash(tc.hash)
@@ -515,7 +515,7 @@ func (suite *BackendTestSuite) TestGetBlockTransactionCountByNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			tc.registerMock(tc.blockNum)
 			count := suite.backend.GetBlockTransactionCountByNumber(tc.blockNum)
@@ -614,7 +614,7 @@ func (suite *BackendTestSuite) TestTendermintBlockByNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			tc.registerMock(tc.blockNumber)
 			resultBlock, err := suite.backend.TendermintBlockByNumber(tc.blockNumber)
@@ -670,7 +670,7 @@ func (suite *BackendTestSuite) TestTendermintBlockResultByNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(tc.blockNumber)
 
 			blockRes, err := suite.backend.TendermintBlockResultByNumber(&tc.blockNumber) //#nosec G601 -- fine for tests
@@ -737,7 +737,7 @@ func (suite *BackendTestSuite) TestBlockNumberFromTendermint() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			blockNrOrHash := ethrpc.BlockNumberOrHash{
 				BlockNumber: tc.blockNum,
@@ -805,7 +805,7 @@ func (suite *BackendTestSuite) TestBlockNumberFromTendermintByHash() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			tc.registerMock(tc.hash)
 			blockNum, err := suite.backend.BlockNumberFromTendermintByHash(tc.hash)
@@ -1077,7 +1077,7 @@ func (suite *BackendTestSuite) TestGetEthBlockFromTendermint() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(math.NewIntFromBigInt(tc.baseFee), tc.validator, tc.height)
 
 			block, err := suite.backend.RPCBlockFromTendermintBlock(tc.resBlock, tc.blockRes, tc.fullTx)
@@ -1187,7 +1187,7 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			msgs := suite.backend.EthMsgsFromTendermintBlock(tc.resBlock, tc.blockRes)
 			suite.Require().Equal(tc.expMsgs, msgs)
@@ -1291,7 +1291,7 @@ func (suite *BackendTestSuite) TestHeaderByNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			tc.registerMock(tc.blockNumber, math.NewIntFromBigInt(tc.baseFee))
 			header, err := suite.backend.HeaderByNumber(tc.blockNumber)
@@ -1402,7 +1402,7 @@ func (suite *BackendTestSuite) TestHeaderByHash() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 
 			tc.registerMock(tc.hash, math.NewIntFromBigInt(tc.baseFee))
 			header, err := suite.backend.HeaderByHash(tc.hash)
@@ -1510,7 +1510,7 @@ func (suite *BackendTestSuite) TestEthBlockByNumber() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(tc.blockNumber)
 
 			ethBlock, err := suite.backend.EthBlockByNumber(tc.blockNumber)
@@ -1609,7 +1609,7 @@ func (suite *BackendTestSuite) TestEthBlockFromTendermintBlock() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(math.NewIntFromBigInt(tc.baseFee), tc.blockRes.Height)
 
 			ethBlock, err := suite.backend.EthBlockFromTendermintBlock(tc.resBlock, tc.blockRes)

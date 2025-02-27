@@ -2,6 +2,7 @@ package backend
 
 import (
 	"bufio"
+	"encoding/hex"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,10 +34,11 @@ import (
 type BackendTestSuite struct {
 	suite.Suite
 
-	backend *Backend
-	from    common.Address
-	acc     sdk.AccAddress
-	signer  keyring.Signer
+	backend     *Backend
+	from        common.Address
+	acc         sdk.AccAddress
+	feePayerAcc sdk.AccAddress
+	signer      keyring.Signer
 }
 
 func TestBackendTestSuite(t *testing.T) {
@@ -45,7 +48,7 @@ func TestBackendTestSuite(t *testing.T) {
 const ChainID = utils.TestnetChainID + "-1"
 
 // SetupTest is executed before every BackendTestSuite test
-func (suite *BackendTestSuite) SetupTest() {
+func (suite *BackendTestSuite) SetupTest(feePayerKey string) {
 	ctx := server.NewDefaultContext()
 	ctx.Viper.Set("telemetry.global-labels", []interface{}{})
 
@@ -66,6 +69,24 @@ func (suite *BackendTestSuite) SetupTest() {
 		Seq:     uint64(1),
 	}
 
+	// Fee payer account
+	if feePayerKey != "" {
+		privKeyBytes, err := hex.DecodeString(feePayerKey)
+		if err != nil {
+			panic(err)
+		}
+		privKey := &secp256k1.PrivKey{
+			Key: privKeyBytes,
+		}
+		pubKey := privKey.PubKey()
+		suite.feePayerAcc = sdk.AccAddress(pubKey.Address())
+		accounts[suite.feePayerAcc.String()] = client.TestAccount{
+			Address: suite.feePayerAcc,
+			Num:     uint64(2),
+			Seq:     uint64(1),
+		}
+	}
+
 	from, priv := utiltx.NewAddrKey()
 	suite.from = from
 	suite.signer = utiltx.NewSigner(priv)
@@ -82,7 +103,7 @@ func (suite *BackendTestSuite) SetupTest() {
 	allowUnprotectedTxs := false
 	idxer := indexer.NewKVIndexer(dbm.NewMemDB(), ctx.Logger, clientCtx)
 
-	suite.backend = NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, idxer, "")
+	suite.backend = NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, idxer)
 	suite.backend.cfg.JSONRPC.GasCap = 0
 	suite.backend.cfg.JSONRPC.EVMTimeout = 0
 	suite.backend.cfg.JSONRPC.AllowInsecureUnlock = true
@@ -90,6 +111,10 @@ func (suite *BackendTestSuite) SetupTest() {
 	suite.backend.clientCtx.Client = mocks.NewClient(suite.T())
 	suite.backend.queryClient.FeeMarket = mocks.NewFeeMarketQueryClient(suite.T())
 	suite.backend.ctx = rpctypes.ContextWithHeight(1)
+	if feePayerKey != "" {
+		err = suite.backend.AddFeePayer(feePayerKey)
+		suite.Require().NoError(err)
+	}
 
 	// Add codec
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
@@ -105,6 +130,9 @@ func (suite *BackendTestSuite) buildEthereumTx() (*evmtypes.MsgEthereumTx, []byt
 		Amount:   big.NewInt(0),
 		GasLimit: 100000,
 		GasPrice: big.NewInt(1),
+	}
+	if suite.backend.feePayer != nil {
+		ethTxParams.GasPrice = big.NewInt(0)
 	}
 	msgEthereumTx := evmtypes.NewTx(&ethTxParams)
 

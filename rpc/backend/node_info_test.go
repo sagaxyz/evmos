@@ -46,7 +46,7 @@ func (suite *BackendTestSuite) TestRPCMinGasPrice() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			minPrice := suite.backend.RPCMinGasPrice()
@@ -88,7 +88,7 @@ func (suite *BackendTestSuite) TestSetGasPrice() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 			output := suite.backend.SetGasPrice(tc.gasPrice)
 			suite.Require().Equal(tc.expOutput, output)
@@ -114,7 +114,7 @@ func (suite *BackendTestSuite) TestListAccounts() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			output, err := suite.backend.ListAccounts()
@@ -146,7 +146,7 @@ func (suite *BackendTestSuite) TestAccounts() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			output, err := suite.backend.Accounts()
@@ -204,7 +204,7 @@ func (suite *BackendTestSuite) TestSyncing() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			output, err := suite.backend.Syncing()
@@ -301,7 +301,7 @@ func (suite *BackendTestSuite) TestSetEtherbase() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			output := suite.backend.SetEtherbase(tc.etherbase)
@@ -344,7 +344,7 @@ func (suite *BackendTestSuite) TestImportRawKey() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			output, err := suite.backend.ImportRawKey(tc.privKey, tc.password)
