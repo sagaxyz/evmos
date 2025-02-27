@@ -186,7 +186,7 @@ func (suite *BackendTestSuite) TestTraceTransaction() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			db := dbm.NewMemDB()
@@ -248,7 +248,7 @@ func (suite *BackendTestSuite) TestTraceBlock() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			traceResults, err := suite.backend.TraceBlock(1, tc.config, tc.resBlock)

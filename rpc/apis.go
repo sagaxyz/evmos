@@ -67,7 +67,10 @@ func init() {
 			feePayerPrivKey string,
 			customFeeResponse bool,
 		) []rpc.API {
-			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, feePayerPrivKey)
+			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
+			if feePayerPrivKey != "" {
+				evmBackend.AddFeePayer(feePayerPrivKey)
+			}
 			return []rpc.API{
 				{
 					Namespace: EthNamespace,
@@ -108,10 +111,10 @@ func init() {
 			_ *rpcclient.WSClient,
 			allowUnprotectedTxs bool,
 			indexer types.EVMTxIndexer,
-			feePayerPrivKey string,
+			_ string,
 			_ bool,
 		) []rpc.API {
-			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, feePayerPrivKey)
+			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
 			return []rpc.API{
 				{
 					Namespace: PersonalNamespace,
@@ -136,10 +139,10 @@ func init() {
 			_ *rpcclient.WSClient,
 			allowUnprotectedTxs bool,
 			indexer types.EVMTxIndexer,
-			feePayerPrivKey string,
+			_ string,
 			_ bool,
 		) []rpc.API {
-			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, feePayerPrivKey)
+			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
 			return []rpc.API{
 				{
 					Namespace: DebugNamespace,
@@ -154,10 +157,10 @@ func init() {
 			_ *rpcclient.WSClient,
 			allowUnprotectedTxs bool,
 			indexer types.EVMTxIndexer,
-			feePayerPrivKey string,
+			_ string,
 			_ bool,
 		) []rpc.API {
-			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer, feePayerPrivKey)
+			evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
 			return []rpc.API{
 				{
 					Namespace: MinerNamespace,

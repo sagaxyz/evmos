@@ -90,7 +90,7 @@ func (b *Backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, er
 	}
 
 	// Returning zero base fee stops Metamask from complaining about not having funds fees
-	if b.feePayerPrivKey != nil {
+	if b.feePayer != nil {
 		return big.NewInt(0), nil
 	}
 

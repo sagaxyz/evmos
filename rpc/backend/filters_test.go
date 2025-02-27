@@ -77,7 +77,7 @@ func (suite *BackendTestSuite) TestGetLogs() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest()
+			suite.SetupTest("")
 
 			tc.registerMock(tc.blockHash)
 			logs, err := suite.backend.GetLogs(tc.blockHash)
@@ -109,7 +109,7 @@ func (suite *BackendTestSuite) TestBloomStatus() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest()
+			suite.SetupTest("")
 
 			tc.registerMock()
 			bloom, _ := suite.backend.BloomStatus()

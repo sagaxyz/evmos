@@ -4,7 +4,6 @@ package backend
 
 import (
 	"context"
-	"encoding/hex"
 	"math/big"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -142,7 +140,8 @@ type Backend struct {
 	cfg                 config.Config
 	allowUnprotectedTxs bool
 	indexer             evmostypes.EVMTxIndexer
-	feePayerPrivKey     *secp256k1.PrivKey
+
+	feePayer *feePayer
 }
 
 // NewBackend creates a new Backend instance for cosmos and ethereum namespaces
@@ -152,10 +151,7 @@ func NewBackend(
 	clientCtx client.Context,
 	allowUnprotectedTxs bool,
 	indexer evmostypes.EVMTxIndexer,
-	feePayerPrivKey string,
 ) *Backend {
-	logger = logger.With("module", "backend")
-
 	chainID, err := evmostypes.ParseChainID(clientCtx.ChainID)
 	if err != nil {
 		panic(err)
@@ -166,27 +162,32 @@ func NewBackend(
 		panic(err)
 	}
 
-	var pk *secp256k1.PrivKey
-	if feePayerPrivKey != "" {
-		privKeyBytes, err := hex.DecodeString(feePayerPrivKey)
-		if err != nil {
-			panic(err)
-		}
-		pk = &secp256k1.PrivKey{
-			Key: privKeyBytes,
-		}
-		logger.Info("node has fee payer signing enabled")
-	}
-
 	return &Backend{
 		ctx:                 context.Background(),
 		clientCtx:           clientCtx,
 		queryClient:         rpctypes.NewQueryClient(clientCtx),
-		logger:              logger,
+		logger:              logger.With("module", "backend"),
 		chainID:             chainID,
 		cfg:                 appConf,
 		allowUnprotectedTxs: allowUnprotectedTxs,
 		indexer:             indexer,
-		feePayerPrivKey:     pk,
 	}
+}
+
+func (b *Backend) AddFeePayer(feePayerPrivKey string) error {
+	if feePayerPrivKey == "" {
+		panic("empty fp private key")
+	}
+	if b.feePayer != nil {
+		panic("fee payer already added")
+	}
+
+	var err error
+	b.feePayer, err = newFeePayer(b.ctx, b.clientCtx, b.queryClient, b.logger, feePayerPrivKey)
+	if err != nil {
+		return err
+	}
+	go b.feePayer.Worker()
+
+	return nil
 }

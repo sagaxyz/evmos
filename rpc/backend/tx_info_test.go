@@ -107,7 +107,7 @@ func (suite *BackendTestSuite) TestGetTransactionByHash() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			db := dbm.NewMemDB()
@@ -172,7 +172,7 @@ func (suite *BackendTestSuite) TestGetTransactionsByHashPending() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			rpcTx, err := suite.backend.getTransactionByHashPending(common.HexToHash(tc.tx.Hash))
@@ -214,7 +214,7 @@ func (suite *BackendTestSuite) TestGetTxByEthHash() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			rpcTx, err := suite.backend.GetTxByEthHash(common.HexToHash(tc.tx.Hash))
@@ -265,7 +265,7 @@ func (suite *BackendTestSuite) TestGetTransactionByBlockHashAndIndex() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			rpcTx, err := suite.backend.GetTransactionByBlockHashAndIndex(tc.blockHash, 1)
@@ -380,7 +380,7 @@ func (suite *BackendTestSuite) TestGetTransactionByBlockAndIndex() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			rpcTx, err := suite.backend.GetTransactionByBlockAndIndex(tc.block, tc.idx)
@@ -445,7 +445,7 @@ func (suite *BackendTestSuite) TestGetTransactionByBlockNumberAndIndex() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			rpcTx, err := suite.backend.GetTransactionByBlockNumberAndIndex(tc.blockNum, tc.idx)
@@ -486,7 +486,7 @@ func (suite *BackendTestSuite) TestGetTransactionByTxIndex() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			txResults, err := suite.backend.GetTxByTxIndex(tc.height, tc.index)
@@ -527,7 +527,7 @@ func (suite *BackendTestSuite) TestQueryTendermintTxIndexer() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			txResults, err := suite.backend.queryTendermintTxIndexer(tc.query, tc.txGetter)
@@ -594,7 +594,7 @@ func (suite *BackendTestSuite) TestGetTransactionReceipt() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock()
 
 			db := dbm.NewMemDB()

@@ -139,7 +139,7 @@ func (suite *BackendTestSuite) TestBaseFee() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			baseFee, err := suite.backend.BaseFee(tc.blockRes)
@@ -176,7 +176,7 @@ func (suite *BackendTestSuite) TestChainId() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			chainID, err := suite.backend.ChainID()
@@ -233,7 +233,7 @@ func (suite *BackendTestSuite) TestGetCoinbase() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			accAddr, err := suite.backend.GetCoinbase()
@@ -273,7 +273,7 @@ func (suite *BackendTestSuite) TestSuggestGasTipCap() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			maxDelta, err := suite.backend.SuggestGasTipCap(tc.baseFee)
@@ -307,7 +307,7 @@ func (suite *BackendTestSuite) TestGlobalMinGasPrice() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock()
 
 			globalMinGasPrice, err := suite.backend.GlobalMinGasPrice()
@@ -441,7 +441,7 @@ func (suite *BackendTestSuite) TestFeeHistory() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("case %s", tc.name), func() {
-			suite.SetupTest() // reset test and queries
+			suite.SetupTest("") // reset test and queries
 			tc.registerMock(tc.validator)
 
 			feeHistory, err := suite.backend.FeeHistory(tc.userBlockCount, tc.latestBlock, []float64{25, 50, 75, 100})

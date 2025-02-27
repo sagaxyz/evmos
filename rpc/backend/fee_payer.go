@@ -1,18 +1,31 @@
 package backend
 
 import (
+	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
+	"github.com/cometbft/cometbft/libs/log"
+	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/pkg/errors"
+
 	rpctypes "github.com/evmos/evmos/v19/rpc/types"
 	evmtypes "github.com/evmos/evmos/v19/x/evm/types"
 	feemarkettypes "github.com/evmos/evmos/v19/x/feemarket/types"
@@ -20,15 +33,134 @@ import (
 
 var baseFeeDeltaBlocks = big.NewInt(2)
 
-func (b *Backend) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err error) {
+type res struct {
+	TxHash common.Hash
+	Error  error
+}
+
+type msg struct {
+	Msg      *evmtypes.MsgEthereumTx
+	EvmDenom string
+	Ret      chan res
+}
+
+type feePayer struct {
+	ctx         context.Context
+	clientCtx   client.Context
+	queryClient *rpctypes.QueryClient
+	logger      log.Logger
+
+	privKey secp256k1.PrivKey
+	pubKey  cryptotypes.PubKey
+	address sdk.AccAddress
+
+	messages chan msg
+}
+
+func newFeePayer(ctx context.Context, clientCtx client.Context, queryClient *rpctypes.QueryClient, logger log.Logger, feePayerPrivKey string) (fp *feePayer, err error) {
+	if feePayerPrivKey == "" {
+		panic("empty fee payer private key")
+	}
+
+	privKeyBytes, err := hex.DecodeString(feePayerPrivKey)
+	if err != nil {
+		return
+	}
+	privKey := secp256k1.PrivKey{
+		Key: privKeyBytes,
+	}
+
+	fp = &feePayer{
+		ctx:         ctx,
+		clientCtx:   clientCtx,
+		queryClient: queryClient,
+		logger:      logger.With("module", "fee_payer"),
+		privKey:     privKey,
+		pubKey:      privKey.PubKey(),
+		address:     sdk.AccAddress(privKey.PubKey().Address()),
+		messages:    make(chan msg, 1<<14),
+	}
+	fp.logger.Info("node has fee payer signing enabled")
+	return
+}
+
+func (fp *feePayer) enqueueMsg(m *evmtypes.MsgEthereumTx, evmDenom string) chan res {
+	ret := make(chan res, 1)
+	fp.messages <- msg{
+		Msg:      m,
+		EvmDenom: evmDenom,
+		Ret:      ret,
+	}
+	return ret
+}
+
+func (fp *feePayer) Worker() {
+	var resp *sdk.TxResponse
+	var err error
+	var msg msg
+
+	var accountSeq uint64
+	var accountNum uint64
+	getAccount := true
+	for {
+		select {
+		case msg = <-fp.messages:
+		case <-fp.ctx.Done():
+			return
+		}
+
+		if getAccount {
+			accountNum, accountSeq, err = fp.clientCtx.AccountRetriever.GetAccountNumberSequence(fp.clientCtx, fp.address)
+			if err != nil {
+				msg.Ret <- res{
+					Error: fmt.Errorf("failed to get account: %w", err),
+				}
+				continue
+			}
+			getAccount = false
+
+			fp.logger.Info("account number and sequence updated", "account_number", accountNum, "account_sequence", accountSeq)
+		}
+
+		resp, err = fp.sendMsg(msg.Msg, msg.EvmDenom, accountNum, accountSeq)
+		if err != nil {
+			if resp != nil {
+				err = errorsmod.ABCIError(resp.Codespace, resp.Code, resp.RawLog)
+			}
+			msg.Ret <- res{
+				Error: err,
+			}
+			continue
+		}
+
+		if resp.Code != 0 && resp.Code != sdkerrors.ErrTxInMempoolCache.ABCICode() {
+			if resp.Code == sdkerrors.ErrWrongSequence.ABCICode() {
+				getAccount = true
+			}
+
+			msg.Ret <- res{
+				Error: errorsmod.ABCIError(resp.Codespace, resp.Code, resp.RawLog),
+			}
+			continue
+		}
+
+		msg.Ret <- res{
+			TxHash: msg.Msg.AsTransaction().Hash(),
+		}
+
+		accountSeq++
+	}
+}
+
+func (fp *feePayer) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err error) {
 	// Get current base fee
 	var baseFee *big.Int
-	blockRes, err := b.TendermintBlockResultByNumber(nil)
+	blockRes, err := fp.TendermintBlockResultByNumber(nil)
 	if err != nil {
 		err = fmt.Errorf("failed to query latest block: %w", err)
 		return
 	}
-	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
+	res, err := fp.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
 	if err != nil || res.BaseFee == nil {
 		err = fmt.Errorf("failed to query base fee: %w", err)
 		return
@@ -39,8 +171,8 @@ func (b *Backend) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err err
 	}
 	baseFee = res.BaseFee.BigInt()
 
-	// Get chain params
-	params, err := b.queryClient.FeeMarket.Params(b.ctx, &feemarkettypes.QueryParamsRequest{})
+	// Get fee market params
+	params, err := fp.queryClient.FeeMarket.Params(fp.ctx, &feemarkettypes.QueryParamsRequest{})
 	if err != nil {
 		err = fmt.Errorf("failed to query params: %w", err)
 		return
@@ -65,15 +197,10 @@ func (b *Backend) calculateFeePayerFees(gas uint64) (amount sdkmath.Int, err err
 	return
 }
 
-func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.MsgEthereumTx, evmDenom string) (tx authsigning.Tx, err error) {
-	if b.feePayerPrivKey == nil {
-		panic("no fee payer priv key")
-	}
-	privKey := *b.feePayerPrivKey
-	pubKey := privKey.PubKey()
-
+func (fp *feePayer) buildTx(ethereumMsg *evmtypes.MsgEthereumTx, evmDenom string, accountNumber, accountSequence uint64) (cosmosTx authsigning.Tx, err error) {
 	// Add the extension options to the transaction for the ethereum message
-	txBuilder, ok := clientCtx.TxConfig.NewTxBuilder().(authtx.ExtensionOptionsTxBuilder)
+	b := fp.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder, ok := b.(authtx.ExtensionOptionsTxBuilder)
 	if !ok {
 		err = fmt.Errorf("unsupported builder: %T", b)
 		return
@@ -89,7 +216,7 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 	txBuilder.SetGasLimit(gas)
 
 	// Overwrite user-provided fees
-	feeAmt, err := b.calculateFeePayerFees(gas)
+	feeAmt, err := fp.calculateFeePayerFees(gas)
 	if err != nil {
 		return
 	}
@@ -109,15 +236,8 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 	}
 
 	// Add the fee payer information
-	feepayerAddress := sdk.AccAddress(pubKey.Address())
+	feepayerAddress := sdk.AccAddress(fp.pubKey.Address())
 	txBuilder.SetFeePayer(feepayerAddress)
-
-	// Query the account number and sequence from the remote chain
-	accountNumber, sequence, err := clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, feepayerAddress)
-	if err != nil {
-		err = fmt.Errorf("failed to get account: %w", err)
-		return
-	}
 
 	// Make sure AuthInfo is complete before signing
 	sigData := signing.SingleSignatureData{
@@ -125,9 +245,9 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 		Signature: nil,
 	}
 	sigV2 := signing.SignatureV2{
-		PubKey:   pubKey,
+		PubKey:   fp.pubKey,
 		Data:     &sigData,
-		Sequence: sequence,
+		Sequence: accountSequence,
 	}
 	err = txBuilder.SetSignatures(sigV2)
 	if err != nil {
@@ -136,17 +256,17 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 
 	// Sign and set signatures
 	signerData := authsigning.SignerData{
-		ChainID:       clientCtx.ChainID,
+		ChainID:       fp.clientCtx.ChainID,
 		AccountNumber: accountNumber,
-		Sequence:      sequence,
+		Sequence:      accountSequence,
 	}
 	sig, err := clienttx.SignWithPrivKey(
 		signing.SignMode_SIGN_MODE_DIRECT,
 		signerData,
 		txBuilder,
-		&privKey,
-		clientCtx.TxConfig,
-		sequence,
+		&fp.privKey,
+		fp.clientCtx.TxConfig,
+		accountSequence,
 	)
 	if err != nil {
 		err = fmt.Errorf("failed to sign transaction: %w", err)
@@ -158,6 +278,38 @@ func (b *Backend) feePayerTx(clientCtx client.Context, ethereumMsg *evmtypes.Msg
 		return
 	}
 
-	tx = txBuilder.GetTx()
+	cosmosTx = txBuilder.GetTx()
 	return
+}
+
+func (fp *feePayer) sendMsg(ethereumMsg *evmtypes.MsgEthereumTx, evmDenom string, accountNumber, accountSequence uint64) (txResp *sdk.TxResponse, err error) {
+	cosmosTx, err := fp.buildTx(ethereumMsg, evmDenom, accountNumber, accountSequence)
+	if err != nil {
+		return
+	}
+
+	// Encode transaction by default Tx encoder
+	txBytes, err := fp.clientCtx.TxConfig.TxEncoder()(cosmosTx)
+	if err != nil {
+		return
+	}
+
+	// Broadcast
+	syncCtx := fp.clientCtx.WithBroadcastMode(flags.BroadcastSync)
+	txResp, err = syncCtx.BroadcastTx(txBytes)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// TendermintBlockResultByNumber returns a Tendermint-formatted block result
+// by block number
+func (fp *feePayer) TendermintBlockResultByNumber(height *int64) (*tmrpctypes.ResultBlockResults, error) {
+	sc, ok := fp.clientCtx.Client.(tmrpcclient.SignClient)
+	if !ok {
+		return nil, errors.New("invalid rpc client")
+	}
+	return sc.BlockResults(fp.ctx, height)
 }

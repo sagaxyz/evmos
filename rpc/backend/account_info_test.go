@@ -62,7 +62,7 @@ func (suite *BackendTestSuite) TestGetCode() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+			suite.SetupTest("") // reset
 			tc.registerMock(tc.addr)
 
 			code, err := suite.backend.GetCode(tc.addr, tc.blockNrOrHash)
@@ -168,7 +168,7 @@ func (suite *BackendTestSuite) TestGetProof() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest()
+			suite.SetupTest("")
 			tc.registerMock(*tc.blockNrOrHash.BlockNumber, tc.addr)
 
 			accRes, err := suite.backend.GetProof(tc.addr, tc.storageKeys, tc.blockNrOrHash)
@@ -231,7 +231,7 @@ func (suite *BackendTestSuite) TestGetStorageAt() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest()
+			suite.SetupTest("")
 			tc.registerMock(tc.addr, tc.key, tc.expStorage.String())
 
 			storage, err := suite.backend.GetStorageAt(tc.addr, tc.key, tc.blockNrOrHash)
@@ -335,7 +335,7 @@ func (suite *BackendTestSuite) TestGetBalance() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest()
+			suite.SetupTest("")
 
 			// avoid nil pointer reference
 			if tc.blockNrOrHash.BlockNumber != nil {
@@ -410,7 +410,7 @@ func (suite *BackendTestSuite) TestGetTransactionCount() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest()
+			suite.SetupTest("")
 
 			addr := utiltx.GenerateAddress()
 			if tc.accExists {
