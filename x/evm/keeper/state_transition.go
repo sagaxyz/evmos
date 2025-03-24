@@ -327,7 +327,12 @@ func (k *Keeper) ApplyMessageWithConfig(
 
 	v := ctx.Value("fee-payer")
 	if v != nil {
-		refundQuotient = uint64(1 / k.gasRefundPercent)
+		m_params := k.GetParams(ctx)
+		if m_params.GasRefundPercent >= 0.01 && m_params.GasRefundPercent <= 1.00 {
+			refundQuotient = uint64(1 / m_params.GasRefundPercent)
+		} else {
+			refundQuotient = params.RefundQuotient
+		}
 	} else {
 		refundQuotient = params.RefundQuotient
 	}

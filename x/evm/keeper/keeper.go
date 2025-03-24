@@ -65,9 +65,6 @@ type Keeper struct {
 	// Some these precompiled contracts might not be active depending on the EVM
 	// parameters.
 	precompiles map[common.Address]vm.PrecompiledContract
-
-	// gas refund percent
-	gasRefundPercent float64
 }
 
 // NewKeeper generates new evm module keeper
@@ -82,7 +79,6 @@ func NewKeeper(
 	erc20Keeper types.Erc20Keeper,
 	tracer string,
 	ss paramstypes.Subspace,
-	gasRefundPercent float64,
 ) *Keeper {
 	// ensure evm module account is set
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
@@ -96,18 +92,17 @@ func NewKeeper(
 
 	// NOTE: we pass in the parameter space to the CommitStateDB in order to use custom denominations for the EVM operations
 	return &Keeper{
-		cdc:              cdc,
-		authority:        authority,
-		accountKeeper:    ak,
-		bankKeeper:       bankKeeper,
-		stakingKeeper:    sk,
-		feeMarketKeeper:  fmk,
-		storeKey:         storeKey,
-		transientKey:     transientKey,
-		tracer:           tracer,
-		erc20Keeper:      erc20Keeper,
-		ss:               ss,
-		gasRefundPercent: gasRefundPercent,
+		cdc:             cdc,
+		authority:       authority,
+		accountKeeper:   ak,
+		bankKeeper:      bankKeeper,
+		stakingKeeper:   sk,
+		feeMarketKeeper: fmk,
+		storeKey:        storeKey,
+		transientKey:    transientKey,
+		tracer:          tracer,
+		erc20Keeper:     erc20Keeper,
+		ss:              ss,
 	}
 }
 
