@@ -321,7 +321,16 @@ func (k *Keeper) ApplyMessageWithConfig(
 		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To(), msg.Data(), leftoverGas, msg.Value())
 	}
 
-	refundQuotient := params.RefundQuotient
+	// adjust the gas refund percentage if the fee payer is used
+	// by using the value in the keeper, passed from the SagaOS App
+	var refundQuotient uint64
+
+	v := ctx.Value("fee-payer")
+	if v != nil {
+		refundQuotient = uint64(1 / k.gasRefundPercent)
+	} else {
+		refundQuotient = params.RefundQuotient
+	}
 
 	// After EIP-3529: refunds are capped to gasUsed / 5
 	if isLondon {
