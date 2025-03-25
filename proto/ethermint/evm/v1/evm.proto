@@ -31,6 +31,7 @@ message Params {
   // contracts that are active
   repeated string active_static_precompiles = 10;
   uint64 gas_refund_percent = 11;
+  bool enable_set_gas_refund_percent = 12;
 }
 
 // AccessControl defines the permission policy of the EVM
