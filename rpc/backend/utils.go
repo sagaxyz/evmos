@@ -180,7 +180,9 @@ func (b *Backend) processBlock(
 			}
 			tx := ethMsg.AsTransaction()
 			reward := tx.EffectiveGasTipValue(blockBaseFee)
-			if reward == nil {
+			// NOTE: Reward will be negative for transactions that used
+			// the fee payer to pay for fees instead.
+			if reward == nil || reward.Sign() < 0 {
 				reward = big.NewInt(0)
 			}
 			sorter = append(sorter, txGasAndReward{gasUsed: txGasUsed, reward: reward})
