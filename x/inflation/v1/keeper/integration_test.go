@@ -76,7 +76,7 @@ var _ = Describe("Inflation", Ordered, func() {
 				})
 
 				It("should not allocate funds to usage incentives (Deprecated)", func() {
-					res, err := s.handler.GetBalance(addr, denomMint)
+					res, err := s.handler.GetBalanceFromBank(addr, denomMint)
 					Expect(err).To(BeNil())
 					balance := res.Balance
 					Expect(balance.IsZero()).To(BeTrue(), "balance should be zero")
@@ -100,7 +100,7 @@ var _ = Describe("Inflation", Ordered, func() {
 				})
 
 				It("should not allocate funds to usage incentives (deprecated)", func() {
-					res, err := s.handler.GetBalance(addr, denomMint)
+					res, err := s.handler.GetBalanceFromBank(addr, denomMint)
 					Expect(err).To(BeNil())
 					actual := res.Balance
 
@@ -167,7 +167,7 @@ var _ = Describe("Inflation", Ordered, func() {
 				})
 
 				It("should not allocate funds to usage incentives", func() {
-					res, err := s.handler.GetBalance(addr, denomMint)
+					res, err := s.handler.GetBalanceFromBank(addr, denomMint)
 					Expect(err).To(BeNil())
 					balance := res.Balance
 					Expect(balance.IsZero()).To(BeTrue())
@@ -192,7 +192,7 @@ var _ = Describe("Inflation", Ordered, func() {
 				})
 
 				It("should not allocate funds to usage incentives (deprecated)", func() {
-					res, err := s.handler.GetBalance(addr, denomMint)
+					res, err := s.handler.GetBalanceFromBank(addr, denomMint)
 					Expect(err).To(BeNil())
 					actual := res.Balance
 
@@ -254,7 +254,7 @@ var _ = Describe("Inflation", Ordered, func() {
 				})
 
 				It("should not allocate funds to usage incentives", func() {
-					res, err := s.handler.GetBalance(addr, denomMint)
+					res, err := s.handler.GetBalanceFromBank(addr, denomMint)
 					Expect(err).To(BeNil())
 					balance := res.Balance
 					Expect(balance.IsZero()).To(BeTrue())
@@ -278,7 +278,7 @@ var _ = Describe("Inflation", Ordered, func() {
 				})
 
 				It("should not allocate funds to usage incentives (deprecated)", func() {
-					res, err := s.handler.GetBalance(addr, denomMint)
+					res, err := s.handler.GetBalanceFromBank(addr, denomMint)
 					Expect(err).To(BeNil())
 					actual := res.Balance
 
