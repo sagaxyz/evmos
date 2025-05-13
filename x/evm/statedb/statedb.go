@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -476,6 +477,16 @@ func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
 func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressPresent bool, slotPresent bool) {
 	return s.accessList.Contains(addr, slot)
+}
+
+func (s *StateDB) RevertMultiStore(cms storetypes.CacheMultiStore, events sdk.Events) {
+	s.cacheCtx = s.cacheCtx.WithMultiStore(cms)
+	s.writeCache = func() {
+		// rollback the events to the ones
+		// on the snapshot
+		s.ctx.EventManager().EmitEvents(events)
+		cms.Write()
+	}
 }
 
 // Snapshot returns an identifier for the current revision of the state.

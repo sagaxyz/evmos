@@ -346,7 +346,7 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 			finalBalance := s.app.BankKeeper.GetBalance(s.ctx, s.address.Bytes(), s.bondDenom)
 			fees := sdk.NewIntFromBigInt(gasPrice).MulRaw(res.GasUsed)
 			expFinal := initialBalance.Amount.Sub(fees)
-			Expect(finalBalance.Amount).To(Equal(expFinal), "expected final balance to be equal to the final balance after withdrawing commission")
+			Expect(finalBalance.Amount).To(Equal(expFinal), "expected final balance to be equal to initial balance  - fees")
 
 			// check that the commission was added to the withdrawer balance
 			finalWithdrawerBalance := s.app.BankKeeper.GetBalance(s.ctx, contractAddr.Bytes(), s.bondDenom)
