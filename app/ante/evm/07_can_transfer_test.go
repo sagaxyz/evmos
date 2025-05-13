@@ -87,6 +87,7 @@ func (suite *EvmAnteTestSuite) TestCanTransfer() {
 				unitNetwork.GetContext(),
 				unitNetwork.App.EvmKeeper,
 				coreMsg,
+				coreMsg.GasFeeCap(),
 				baseFeeResp.BaseFee.BigInt(),
 				ethCfg,
 				evmParams.Params,
