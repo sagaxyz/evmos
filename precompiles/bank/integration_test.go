@@ -166,7 +166,7 @@ var _ = Describe("Bank Extension -", func() {
 				err = is.precompile.UnpackIntoInterface(&balances, bank.BalancesMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				balanceAfter, err := is.grpcHandler.GetBalance(receiver.Bytes(), is.tokenDenom)
+				balanceAfter, err := is.grpcHandler.GetBalanceFromBank(receiver.Bytes(), is.tokenDenom)
 				Expect(err).ToNot(HaveOccurred(), "failed to get balance")
 
 				Expect(math.NewInt(balances[0].Amount.Int64())).To(Equal(balanceAfter.Balance.Amount))
@@ -189,7 +189,7 @@ var _ = Describe("Bank Extension -", func() {
 				err = is.precompile.UnpackIntoInterface(&balances, bank.BalancesMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				balanceAfter, err := is.grpcHandler.GetBalance(receiver.Bytes(), utils.BaseDenom)
+				balanceAfter, err := is.grpcHandler.GetBalanceFromBank(receiver.Bytes(), utils.BaseDenom)
 				Expect(err).ToNot(HaveOccurred(), "failed to get balance")
 
 				Expect(math.NewInt(balances[0].Amount.Int64())).To(Equal(balanceAfter.Balance.Amount))
@@ -309,7 +309,7 @@ var _ = Describe("Bank Extension -", func() {
 				err = is.precompile.UnpackIntoInterface(&balances, bank.BalancesMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				balanceAfter, err := is.grpcHandler.GetBalance(receiver.Bytes(), is.tokenDenom)
+				balanceAfter, err := is.grpcHandler.GetBalanceFromBank(receiver.Bytes(), is.tokenDenom)
 				Expect(err).ToNot(HaveOccurred(), "failed to get balance")
 
 				Expect(math.NewInt(balances[0].Amount.Int64())).To(Equal(balanceAfter.Balance.Amount))
@@ -332,7 +332,7 @@ var _ = Describe("Bank Extension -", func() {
 				err = is.precompile.UnpackIntoInterface(&balances, bank.BalancesMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				balanceAfter, err := is.grpcHandler.GetBalance(receiver.Bytes(), utils.BaseDenom)
+				balanceAfter, err := is.grpcHandler.GetBalanceFromBank(receiver.Bytes(), utils.BaseDenom)
 				Expect(err).ToNot(HaveOccurred(), "failed to get balance")
 
 				Expect(math.NewInt(balances[0].Amount.Int64())).To(Equal(balanceAfter.Balance.Amount))
