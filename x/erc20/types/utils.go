@@ -18,7 +18,7 @@ const (
 	reLeadingNumbers = `(?m)^(\d+)`
 	// ^[^A-Za-z] forces first chars to be letters
 	// [^a-zA-Z0-9/-] deletes special characters
-	reDnmString = `^[^A-Za-z]|[^a-zA-Z0-9/-]`
+	reDnmString = `^[^A-Za-z]|[^a-zA-Z0-9/:-]`
 )
 
 func removeLeadingNumbers(str string) string {
@@ -46,7 +46,7 @@ func removeInvalidPrefixes(str string) string {
 }
 
 // SanitizeERC20Name enforces 128 max string length, deletes leading numbers
-// removes special characters  (except /)  and spaces from the ERC20 name
+// removes special characters  (except / and :)  and spaces from the ERC20 name
 func SanitizeERC20Name(name string) string {
 	name = removeLeadingNumbers(name)
 	name = removeSpecialChars(name)
