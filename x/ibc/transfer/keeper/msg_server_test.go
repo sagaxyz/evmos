@@ -6,13 +6,13 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	"github.com/evmos/evmos/v20/testutil/integration/evmos/keyring"
 	testutils "github.com/evmos/evmos/v20/testutil/integration/evmos/utils"
+	erc20types "github.com/evmos/evmos/v20/x/erc20/types"
 	"github.com/evmos/evmos/v20/x/ibc/transfer/keeper"
 	"github.com/stretchr/testify/mock"
 )
@@ -49,7 +49,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				contractAddr, err := suite.DeployContract("coin", "token", uint8(6))
 				suite.Require().NoError(err)
 
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin("erc20/"+contractAddr.String(), math.NewInt(10)), addr, "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(erc20types.CreateDenom(contractAddr.String()), math.NewInt(10)), addr, "", timeoutHeight, 0, "")
 				return transferMsg
 			},
 			false,
@@ -180,7 +180,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Require().NoError(err)
 				suite.Require().True(len(res) == 1)
 				pair := res[0]
-				suite.Require().Equal("erc20/"+pair.Erc20Address, pair.Denom)
+				suite.Require().Equal(erc20types.CreateDenom(pair.Erc20Address), pair.Denom)
 
 				amt := math.NewInt(10)
 				_, err = suite.MintERC20Token(contractAddr, sender.Addr, amt.BigInt())
