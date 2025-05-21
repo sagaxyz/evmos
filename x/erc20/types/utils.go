@@ -39,6 +39,9 @@ func removeInvalidPrefixes(str string) string {
 	if strings.HasPrefix(str, "erc20/") {
 		return removeInvalidPrefixes(str[6:])
 	}
+	if strings.HasPrefix(str, "erc20:") {
+		return removeInvalidPrefixes(str[6:])
+	}
 	return str
 }
 

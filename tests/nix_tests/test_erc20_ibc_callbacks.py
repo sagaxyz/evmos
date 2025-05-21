@@ -112,7 +112,7 @@ def test_ibc_callbacks(
     assert erc20_balance == initial_amt
 
     # convert to IBC voucher
-    ibc_voucher_denom = f"erc20/{contract.address}"
+    ibc_voucher_denom = f"erc20:{contract.address}"
     if convert_amt > 0:
         rsp = evmos_cli.convert_erc20(contract.address, convert_amt, "signer2")
         assert rsp["code"] == 0, rsp["raw_log"]

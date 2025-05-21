@@ -30,7 +30,7 @@ import (
 	evmtypes "github.com/evmos/evmos/v20/x/evm/types"
 )
 
-var erc20Denom = "erc20/0xdac17f958d2ee523a2206206994597c13d831ec7"
+var erc20Denom = "erc20:0xdac17f958d2ee523a2206206994597c13d831ec7"
 
 func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	var ctx sdk.Context
