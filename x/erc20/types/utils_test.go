@@ -33,6 +33,7 @@ func TestSanitizeERC20Name(t *testing.T) {
 		{"name contains '/'", "ibc/erc20/ibc/20invalid", "20invalid", false},
 		{"name contains '/'", "123/leadingslash", "leadingslash", true},
 		{"name contains '-'", "Dash-Coin", "Dash-Coin", true},
+		{"name contains ':'", "erc20:valid", "valid", true},
 		{"really long word", strings.Repeat("a", 150), strings.Repeat("a", 128), true},
 		{"single word name: Token", "Token", "Token", true},
 		{"single word name: Coin", "Coin", "Coin", true},
