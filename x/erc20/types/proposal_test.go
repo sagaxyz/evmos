@@ -59,7 +59,7 @@ func (suite *ProposalTestSuite) TestCreateDenom() {
 		{
 			"with valid address",
 			"0xdac17f958d2ee523a2206206994597c13d831ec7",
-			"erc20:0xdac17f958d2ee523a2206206994597c13d831ec7",
+			types.CreateDenom("0xdac17f958d2ee523a2206206994597c13d831ec7"),
 		},
 		{
 			"with empty string",
@@ -111,7 +111,7 @@ func (suite *ProposalTestSuite) TestValidateErc20Denom() {
 		},
 		{
 			"pass",
-			"erc20:0xdac17f958d2ee523a2206206994597c13d831ec7",
+			types.CreateDenom("0xdac17f958d2ee523a2206206994597c13d831ec7"),
 			true,
 		},
 	}
