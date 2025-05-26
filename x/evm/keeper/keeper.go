@@ -354,3 +354,14 @@ func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, er
 	k.SetTransientGasUsed(ctx, result)
 	return result, nil
 }
+
+// AddEVMLog adds a new EVM log to the state database.
+// This method can be used by other modules to emit EVM events.
+//
+// TODO: this is maybe not needed? Maybe rather instantiate the stateDB separately
+// and then
+func (k *Keeper) AddEVMLog(ctx sdk.Context, txConfig statedb.TxConfig, log *ethtypes.Log) error {
+	stateDB := statedb.New(ctx, k, txConfig)
+	stateDB.AddLog(log)
+	return stateDB.Commit()
+}

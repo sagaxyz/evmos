@@ -20,6 +20,7 @@ import (
 
 	"github.com/evmos/evmos/v20/ibc"
 	"github.com/evmos/evmos/v20/x/erc20/types"
+	"github.com/evmos/evmos/v20/x/evm/statedb"
 )
 
 // OnRecvPacket performs the ICS20 middleware receive callback for automatically
@@ -40,6 +41,10 @@ func (k Keeper) OnRecvPacket(
 	ack exported.Acknowledgement,
 ) exported.Acknowledgement {
 	// If ERC20 module is disabled no-op
+	//
+	// TODO: maybe in case there is an existing token pair found,
+	// we should still emit the transfer log to the EVM stateDB? because the transfer has happened,
+	// so otherwise the balances would go out of sync
 	if !k.IsERC20Enabled(ctx) {
 		return ack
 	}
@@ -78,6 +83,8 @@ func (k Keeper) OnRecvPacket(
 	receiverAcc := k.accountKeeper.GetAccount(ctx, recipient)
 
 	// return acknowledgement without conversion if receiver is a module account
+	//
+	// TODO: should this also emit the transfer event still? I guess the event emitting might be something to implement as a defer here?
 	if types.IsModuleAccount(receiverAcc) {
 		return ack
 	}
@@ -102,6 +109,8 @@ func (k Keeper) OnRecvPacket(
 	}
 	if coin.Denom == bondDenom {
 		// no-op, received coin is the staking denomination
+		//
+		// TODO: this is only checking the native denom, but what if there's a different gas token from the staking denom?
 		return ack
 	}
 
@@ -133,11 +142,15 @@ func (k Keeper) OnRecvPacket(
 				),
 			},
 		)
-		return ack
+
+		// assign to the outer scope for event emitting
+		pair = *tokenPair
 
 	// Case 2. native ERC20 token
 	case found && pair.IsNativeERC20():
 		// Token pair is disabled -> return
+		//
+		// TODO: we should really look into this behavior here -> what sense does it make to disable a pair and has this really ever been used? For what reason?
 		if !pair.Enabled {
 			return ack
 		}
@@ -158,6 +171,24 @@ func (k Keeper) OnRecvPacket(
 			},
 		)
 	}
+
+	// TODO: emit the transfer event here
+	eventLog, err := types.BuildTransferLog(
+		ctx,
+		pair.GetERC20Contract(),
+		// TODO: use some utils here?
+		common.BytesToAddress(sender.Bytes()),
+		common.BytesToAddress(recipient.Bytes()),
+		coin.Amount.BigInt(),
+	)
+	if err != nil {
+		// TODO: add logging here in case something goes wrong?
+		return ack
+	}
+
+	// TODO: check if it makes sense to emit the log here already or if it should rather be done
+	// upon receiving the acknowledgement from the destination? Maybe by having logs in both places upon receiving an error, it's clear that there was a refund?
+	k.evmKeeper.AddEVMLog(ctx, statedb.NewEmptyTxConfig(common.Hash{}), eventLog)
 
 	return ack
 }

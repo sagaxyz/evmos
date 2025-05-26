@@ -19,6 +19,8 @@ import (
 
 // MakeTopic converts a filter query argument into a filter topic.
 // NOTE: This was copied from accounts/abi/topics.go
+//
+// TODO: this has to be moved to the evm types for example?
 func MakeTopic(rule interface{}) (common.Hash, error) {
 	var topic common.Hash
 

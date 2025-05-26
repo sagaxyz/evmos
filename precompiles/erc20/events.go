@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	erc20types "github.com/evmos/evmos/v20/x/erc20/types"
 	"github.com/evmos/evmos/v20/x/evm/core/vm"
 
 	auth "github.com/evmos/evmos/v20/precompiles/authorization"
@@ -19,41 +20,20 @@ import (
 
 const (
 	// EventTypeTransfer defines the event type for the ERC-20 Transfer and TransferFrom transactions.
+	//
+	// TODO: check if this is necessary still?
 	EventTypeTransfer = "Transfer"
 )
 
 // EmitTransferEvent creates a new Transfer event emitted on transfer and transferFrom transactions.
 func (p Precompile) EmitTransferEvent(ctx sdk.Context, stateDB vm.StateDB, from, to common.Address, value *big.Int) error {
 	// Prepare the event topics
-	event := p.ABI.Events[EventTypeTransfer]
-	topics := make([]common.Hash, 3)
-
-	// The first topic is always the signature of the event.
-	topics[0] = event.ID
-
-	var err error
-	topics[1], err = cmn.MakeTopic(from)
+	transferLog, err := erc20types.BuildTransferLog(ctx, p.Address(), from, to, value)
 	if err != nil {
 		return err
 	}
 
-	topics[2], err = cmn.MakeTopic(to)
-	if err != nil {
-		return err
-	}
-
-	arguments := abi.Arguments{event.Inputs[2]}
-	packed, err := arguments.Pack(value)
-	if err != nil {
-		return err
-	}
-
-	stateDB.AddLog(&ethtypes.Log{
-		Address:     p.Address(),
-		Topics:      topics,
-		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()), //nolint:gosec // G115
-	})
+	stateDB.AddLog(transferLog)
 
 	return nil
 }

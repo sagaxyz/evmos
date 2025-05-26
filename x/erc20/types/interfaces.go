@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/evmos/v20/x/evm/core/vm"
 
 	"github.com/evmos/evmos/v20/x/evm/statedb"
@@ -46,6 +47,7 @@ type EVMKeeper interface {
 	SetCode(ctx sdk.Context, hash []byte, bytecode []byte)
 	SetAccount(ctx sdk.Context, address common.Address, account statedb.Account) error
 	GetAccount(ctx sdk.Context, address common.Address) *statedb.Account
+	AddEVMLog(ctx sdk.Context, txConfig statedb.TxConfig, log *ethtypes.Log) error
 }
 
 type (

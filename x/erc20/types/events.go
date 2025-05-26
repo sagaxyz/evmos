@@ -4,9 +4,16 @@
 package types
 
 import (
+	"errors"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/evmos/evmos/v20/contracts"
+	precompilecommon "github.com/evmos/evmos/v20/precompiles/common"
 )
 
 // erc20 events
@@ -15,6 +22,8 @@ const (
 	EventTypeRegisterERC20          = "register_erc20"
 	EventTypeToggleTokenConversion  = "toggle_token_conversion" // #nosec
 	EventTypeRegisterERC20Extension = "register_erc20_extension"
+	EventTypeApproval               = "approval"
+	EventTypeTransfer               = "transfer"
 
 	AttributeCoinSourceChannel = "source_channel"
 	AttributeKeyCosmosCoin     = "cosmos_coin"
@@ -22,9 +31,65 @@ const (
 	AttributeKeyReceiver       = "receiver"
 )
 
-// LogTransfer Event type for Transfer(address from, address to, uint256 value)
-type LogTransfer struct {
-	From   common.Address
-	To     common.Address
-	Tokens *big.Int
+var (
+	ErrEventNotFound = errors.New("event not found in contract abi")
+)
+
+// TODO: if we're going with this we should refactor throughout the codebase, where similar code is repeated, e.g. precompiles
+func BuildApprovalLog(ctx sdk.Context, erc20Addr, owner, spender common.Address, value *big.Int) (*ethtypes.Log, error) {
+	// TODO: we're hardcoding the erc20 minter burner here, does that make sense?
+	// Theoretically all ERC-20 contracts should have the same signature for this event.
+	event, found := contracts.ERC20MinterBurnerDecimalsContract.ABI.Events[EventTypeApproval]
+	if !found {
+		return nil, errorsmod.Wrap(ErrEventNotFound, EventTypeApproval)
+	}
+
+	return buildLog(ctx, event, erc20Addr, owner, spender, value)
+}
+
+func BuildTransferLog(ctx sdk.Context, erc20Addr, from, to common.Address, value *big.Int) (*ethtypes.Log, error) {
+	event, found := contracts.ERC20MinterBurnerDecimalsContract.ABI.Events[EventTypeTransfer]
+	if !found {
+		return nil, errorsmod.Wrap(ErrEventNotFound, EventTypeTransfer)
+	}
+
+	return buildLog(ctx, event, erc20Addr, from, to, value)
+}
+
+func buildLog(
+	ctx sdk.Context,
+	event abi.Event,
+	erc20Addr,
+	from,
+	to common.Address,
+	value *big.Int,
+) (*ethtypes.Log, error) {
+	topics := make([]common.Hash, 3)
+
+	// The first topic is always the signature of the event.
+	topics[0] = event.ID
+
+	var err error
+	topics[1], err = precompilecommon.MakeTopic(from)
+	if err != nil {
+		return nil, err
+	}
+
+	topics[2], err = precompilecommon.MakeTopic(to)
+	if err != nil {
+		return nil, err
+	}
+
+	arguments := abi.Arguments{event.Inputs[2]}
+	packed, err := arguments.Pack(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ethtypes.Log{
+		Address:     erc20Addr,
+		Topics:      topics,
+		Data:        packed,
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint:gosec // G115
+	}, nil
 }
