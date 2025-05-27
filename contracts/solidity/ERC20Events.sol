@@ -4,6 +4,15 @@
 pragma solidity ^0.8.0;
 
 contract ERC20Events {
+    uint8 private _decimals;
+
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    /**
+    * @dev Sets `_decimals` as `decimals_ once at Deployment'
+    */
+    function setupDecimals(uint8 decimals_) external {
+        _decimals = decimals_;
+    }
 }
