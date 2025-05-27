@@ -22,8 +22,8 @@ const (
 	EventTypeRegisterERC20          = "register_erc20"
 	EventTypeToggleTokenConversion  = "toggle_token_conversion" // #nosec
 	EventTypeRegisterERC20Extension = "register_erc20_extension"
-	EventTypeApproval               = "approval"
-	EventTypeTransfer               = "transfer"
+	EventTypeApproval               = "Approval"
+	EventTypeTransfer               = "Transfer"
 
 	AttributeCoinSourceChannel = "source_channel"
 	AttributeKeyCosmosCoin     = "cosmos_coin"
