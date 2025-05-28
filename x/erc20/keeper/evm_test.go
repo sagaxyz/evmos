@@ -73,7 +73,7 @@ func (suite *KeeperTestSuite) TestQueryERC20() {
 }
 
 func (suite *KeeperTestSuite) TestBalanceOf() {
-	var mockEVMKeeper *erc20mocks.EVMKeeper
+	var mockEVMKeeper *erc20mocks.MockEVMKeeper
 	contract := utiltx.GenerateAddress()
 	testCases := []struct {
 		name       string
@@ -113,7 +113,7 @@ func (suite *KeeperTestSuite) TestBalanceOf() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
-		mockEVMKeeper = &erc20mocks.EVMKeeper{}
+		mockEVMKeeper = erc20mocks.NewMockEVMKeeper(suite.T())
 		suite.network.App.Erc20Keeper = keeper.NewKeeper(
 			suite.network.App.GetKey("erc20"), suite.network.App.AppCodec(),
 			authtypes.NewModuleAddress(govtypes.ModuleName),
@@ -135,7 +135,7 @@ func (suite *KeeperTestSuite) TestBalanceOf() {
 }
 
 func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
-	var mockEVMKeeper *erc20mocks.EVMKeeper
+	var mockEVMKeeper *erc20mocks.MockEVMKeeper
 	contract := utiltx.GenerateAddress()
 	testCases := []struct {
 		name     string
@@ -212,7 +212,7 @@ func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
 		suite.SetupTest() // reset
 
 		// TODO: what's the reason we are using mockEVMKeeper here? Instead of just passing the suite.app.EvmKeeper?
-		mockEVMKeeper = &erc20mocks.EVMKeeper{}
+		mockEVMKeeper = erc20mocks.NewMockEVMKeeper(suite.T())
 		suite.network.App.Erc20Keeper = keeper.NewKeeper(
 			suite.network.App.GetKey("erc20"), suite.network.App.AppCodec(),
 			authtypes.NewModuleAddress(govtypes.ModuleName), suite.network.App.AccountKeeper,

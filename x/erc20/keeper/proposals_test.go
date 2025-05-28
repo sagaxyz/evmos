@@ -124,7 +124,7 @@ func (suite *KeeperTestSuite) TestRegisterERC20() {
 		{
 			"force fail evm",
 			func() {
-				mockEVMKeeper := &erc20mocks.EVMKeeper{}
+				mockEVMKeeper := erc20mocks.NewMockEVMKeeper(suite.T())
 
 				suite.network.App.Erc20Keeper = keeper.NewKeeper(
 					suite.network.App.GetKey("erc20"), suite.network.App.AppCodec(),
