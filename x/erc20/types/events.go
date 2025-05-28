@@ -37,7 +37,7 @@ var (
 
 // TODO: if we're going with this we should refactor throughout the codebase, where similar code is repeated, e.g. precompiles
 func BuildApprovalLog(ctx sdk.Context, erc20Addr, owner, spender common.Address, value *big.Int) (*ethtypes.Log, error) {
-	event, found := contracts.ERC20EventsContract.ABI.Events[EventTypeApproval]
+	event, found := contracts.ERC20MinterBurnerDecimalsContract.ABI.Events[EventTypeApproval]
 	if !found {
 		return nil, errorsmod.Wrap(ErrEventNotFound, EventTypeApproval)
 	}
@@ -46,7 +46,7 @@ func BuildApprovalLog(ctx sdk.Context, erc20Addr, owner, spender common.Address,
 }
 
 func BuildTransferLog(ctx sdk.Context, erc20Addr, from, to common.Address, value *big.Int) (*ethtypes.Log, error) {
-	event, found := contracts.ERC20EventsContract.ABI.Events[EventTypeTransfer]
+	event, found := contracts.ERC20MinterBurnerDecimalsContract.ABI.Events[EventTypeTransfer]
 	if !found {
 		return nil, errorsmod.Wrap(ErrEventNotFound, EventTypeTransfer)
 	}

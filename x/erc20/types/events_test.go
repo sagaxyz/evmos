@@ -7,19 +7,19 @@ import (
 )
 
 func TestERC20Events(t *testing.T) {
-	if len(contracts.ERC20EventsContract.ABI.Events) <= 0 {
+	if len(contracts.ERC20MinterBurnerDecimalsContract.ABI.Events) <= 0 {
 		t.Fatal("expected non-empty abi events")
 	}
-	if len(contracts.ERC20EventsContract.ABI.Methods) <= 0 {
+	if len(contracts.ERC20MinterBurnerDecimalsContract.ABI.Methods) <= 0 {
 		t.Fatal("expected non-empty abi methods")
 	}
 
-	_, found := contracts.ERC20EventsContract.ABI.Events[EventTypeTransfer]
+	_, found := contracts.ERC20MinterBurnerDecimalsContract.ABI.Events[EventTypeTransfer]
 	if !found {
 		t.Fatal("expected event type transfer to be present")
 	}
 
-	_, found = contracts.ERC20EventsContract.ABI.Events[EventTypeApproval]
+	_, found = contracts.ERC20MinterBurnerDecimalsContract.ABI.Events[EventTypeApproval]
 	if !found {
 		t.Fatal("expected event type approval to be present")
 	}

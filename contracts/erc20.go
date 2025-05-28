@@ -18,26 +18,12 @@ var (
 
 	// ERC20MinterBurnerDecimalsContract is the compiled erc20 contract
 	ERC20MinterBurnerDecimalsContract evmtypes.CompiledContract
-
-	// ERC20EventsJSON are the compiled bytes of the ERC20EventsContract
-	//
-	//go:embed solidity/ERC20Events.json
-	ERC20EventsJSON []byte
-
-	// ERC20EventsContract is the compiled erc20 contract
-	ERC20EventsContract evmtypes.CompiledContract
 )
 
 func init() {
 	var err error
 	if ERC20MinterBurnerDecimalsContract, err = contractutils.ConvertHardhatBytesToCompiledContract(
 		ERC20MinterBurnerDecimalsJSON,
-	); err != nil {
-		panic(err)
-	}
-
-	if ERC20EventsContract, err = contractutils.ConvertHardhatBytesToCompiledContract(
-		ERC20EventsJSON,
 	); err != nil {
 		panic(err)
 	}
