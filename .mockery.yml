@@ -1,0 +1,7 @@
+packages:
+  github.com/evmos/evmos/v20/x/erc20/types:
+    config:
+      include-interface-regex: EVMKeeper
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName}}.go"
+      pkgname: mocks
