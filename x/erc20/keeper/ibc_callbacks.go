@@ -191,6 +191,15 @@ func (k Keeper) OnRecvPacket(
 
 	// TODO: check if using the block hash makes a difference here?
 	blockHash := common.BytesToHash(ctx.HeaderHash())
+	jsonContents, err := eventLog.MarshalJSON()
+	if err != nil {
+		ctx.Logger().Error("failed to marshal event log", "error", err)
+	}
+	ctx.Logger().Info(
+		"adding event log",
+		"blockHash", blockHash,
+		"eventLog", string(jsonContents),
+	)
 	k.evmKeeper.AddEVMLog(
 		ctx,
 		statedb.NewEmptyTxConfig(blockHash),
