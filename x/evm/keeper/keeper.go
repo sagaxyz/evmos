@@ -360,8 +360,7 @@ func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, er
 //
 // TODO: this is maybe not needed? Maybe rather instantiate the stateDB separately
 // and then
-func (k *Keeper) AddEVMLog(ctx sdk.Context, txConfig statedb.TxConfig, log *ethtypes.Log) error {
+func (k *Keeper) AddEVMLog(ctx sdk.Context, txConfig statedb.TxConfig, log *ethtypes.Log) {
 	stateDB := statedb.New(ctx, k, txConfig)
 	stateDB.AddLog(log)
-	return stateDB.Commit()
 }

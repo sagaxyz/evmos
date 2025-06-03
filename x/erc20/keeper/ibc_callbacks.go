@@ -188,7 +188,14 @@ func (k Keeper) OnRecvPacket(
 
 	// TODO: check if it makes sense to emit the log here already or if it should rather be done
 	// upon receiving the acknowledgement from the destination? Maybe by having logs in both places upon receiving an error, it's clear that there was a refund?
-	k.evmKeeper.AddEVMLog(ctx, statedb.NewEmptyTxConfig(common.Hash{}), eventLog)
+
+	// TODO: check if using the block hash makes a difference here?
+	blockHash := common.BytesToHash(ctx.HeaderHash())
+	err = k.evmKeeper.AddEVMLog(ctx, statedb.NewEmptyTxConfig(blockHash), eventLog)
+	if err != nil {
+		// TODO: check if this way of logging is supported? Since it's not used in other places in this file..
+		ctx.Logger().Error("failed to add event log", "error", err)
+	}
 
 	return ack
 }
