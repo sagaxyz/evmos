@@ -403,7 +403,8 @@ lint: lint-go lint-python lint-contracts
 
 lint-go:
 	gofumpt -l .
-	golangci-lint run --out-format=tab
+	# golangci-lint run --out-format=tab
+	golangci-lint run
 
 lint-python:
 	find . -name "*.py" -type f -not -path "*/node_modules/*" | xargs pylint

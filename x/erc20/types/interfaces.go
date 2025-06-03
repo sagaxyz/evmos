@@ -47,7 +47,7 @@ type EVMKeeper interface {
 	SetCode(ctx sdk.Context, hash []byte, bytecode []byte)
 	SetAccount(ctx sdk.Context, address common.Address, account statedb.Account) error
 	GetAccount(ctx sdk.Context, address common.Address) *statedb.Account
-	AddEVMLog(ctx sdk.Context, txConfig statedb.TxConfig, log *ethtypes.Log) error
+	AddEVMLog(ctx sdk.Context, txConfig statedb.TxConfig, log *ethtypes.Log)
 }
 
 type (

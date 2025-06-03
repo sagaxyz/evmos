@@ -191,11 +191,11 @@ func (k Keeper) OnRecvPacket(
 
 	// TODO: check if using the block hash makes a difference here?
 	blockHash := common.BytesToHash(ctx.HeaderHash())
-	err = k.evmKeeper.AddEVMLog(ctx, statedb.NewEmptyTxConfig(blockHash), eventLog)
-	if err != nil {
-		// TODO: check if this way of logging is supported? Since it's not used in other places in this file..
-		ctx.Logger().Error("failed to add event log", "error", err)
-	}
+	k.evmKeeper.AddEVMLog(
+		ctx,
+		statedb.NewEmptyTxConfig(blockHash),
+		eventLog,
+	)
 
 	return ack
 }

@@ -46,20 +46,9 @@ func (_m *MockEVMKeeper) EXPECT() *MockEVMKeeper_Expecter {
 }
 
 // AddEVMLog provides a mock function for the type MockEVMKeeper
-func (_mock *MockEVMKeeper) AddEVMLog(ctx types.Context, txConfig statedb.TxConfig, log *types0.Log) error {
-	ret := _mock.Called(ctx, txConfig, log)
-
-	if len(ret) == 0 {
-		panic("no return value specified for AddEVMLog")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(types.Context, statedb.TxConfig, *types0.Log) error); ok {
-		r0 = returnFunc(ctx, txConfig, log)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
+func (_mock *MockEVMKeeper) AddEVMLog(ctx types.Context, txConfig statedb.TxConfig, log *types0.Log) {
+	_mock.Called(ctx, txConfig, log)
+	return
 }
 
 // MockEVMKeeper_AddEVMLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddEVMLog'
@@ -98,13 +87,13 @@ func (_c *MockEVMKeeper_AddEVMLog_Call) Run(run func(ctx types.Context, txConfig
 	return _c
 }
 
-func (_c *MockEVMKeeper_AddEVMLog_Call) Return(err error) *MockEVMKeeper_AddEVMLog_Call {
-	_c.Call.Return(err)
+func (_c *MockEVMKeeper_AddEVMLog_Call) Return() *MockEVMKeeper_AddEVMLog_Call {
+	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockEVMKeeper_AddEVMLog_Call) RunAndReturn(run func(ctx types.Context, txConfig statedb.TxConfig, log *types0.Log) error) *MockEVMKeeper_AddEVMLog_Call {
-	_c.Call.Return(run)
+func (_c *MockEVMKeeper_AddEVMLog_Call) RunAndReturn(run func(ctx types.Context, txConfig statedb.TxConfig, log *types0.Log)) *MockEVMKeeper_AddEVMLog_Call {
+	_c.Run(run)
 	return _c
 }
 
