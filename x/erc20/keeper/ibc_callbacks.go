@@ -191,6 +191,7 @@ func (k Keeper) OnRecvPacket(
 
 	// TODO: check if using the block hash makes a difference here?
 	blockHash := common.BytesToHash(ctx.HeaderHash())
+	eventLog.BlockHash = blockHash
 	jsonContents, err := eventLog.MarshalJSON()
 	if err != nil {
 		ctx.Logger().Error("failed to marshal event log", "error", err)
