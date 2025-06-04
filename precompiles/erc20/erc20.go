@@ -16,9 +16,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	wrappedibc "github.com/evmos/evmos/v20/ibc"
 	auth "github.com/evmos/evmos/v20/precompiles/authorization"
 	erc20types "github.com/evmos/evmos/v20/x/erc20/types"
-	transferkeeper "github.com/evmos/evmos/v20/x/ibc/transfer/keeper"
 )
 
 const (
@@ -57,7 +57,7 @@ type Precompile struct {
 	cmn.Precompile
 	tokenPair      erc20types.TokenPair
 	bankKeeper     bankkeeper.Keeper
-	transferKeeper transferkeeper.Keeper
+	transferKeeper wrappedibc.DenomTraceKeeper
 }
 
 // NewPrecompile creates a new ERC-20 Precompile instance as a
@@ -66,7 +66,7 @@ func NewPrecompile(
 	tokenPair erc20types.TokenPair,
 	bankKeeper bankkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
-	transferKeeper transferkeeper.Keeper,
+	transferKeeper wrappedibc.DenomTraceKeeper,
 ) (*Precompile, error) {
 	newABI, err := cmn.LoadABI(f, abiPath)
 	if err != nil {

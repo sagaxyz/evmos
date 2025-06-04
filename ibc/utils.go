@@ -13,7 +13,6 @@ import (
 
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	transferkeeper "github.com/evmos/evmos/v20/x/ibc/transfer/keeper"
 
 	"github.com/evmos/evmos/v20/utils"
 )
@@ -139,7 +138,7 @@ func IsBaseDenomFromSourceChain(rawDenom string) bool {
 // GetDenomTrace returns the denomination trace from the corresponding IBC denomination. If the
 // denomination is not an IBC voucher or the trace is not found, it returns an error.
 func GetDenomTrace(
-	transferKeeper transferkeeper.Keeper,
+	transferKeeper DenomTraceKeeper,
 	ctx sdk.Context,
 	denom string,
 ) (transfertypes.DenomTrace, error) {
