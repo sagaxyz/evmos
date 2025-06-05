@@ -401,10 +401,11 @@ benchmark:
 
 lint: lint-go lint-python lint-contracts
 
+LINT_VERSION=v2.1.6-alpine
+LINT_IMAGE=golangci/golangci-lint:$(LINT_VERSION)
 lint-go:
+	$(DOCKER) run --rm -v $(CURDIR):/app -w /app $(LINT_IMAGE) golangci-lint run
 	gofumpt -l .
-	# golangci-lint run --out-format=tab
-	golangci-lint run
 
 lint-python:
 	find . -name "*.py" -type f -not -path "*/node_modules/*" | xargs pylint
