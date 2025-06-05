@@ -25,7 +25,6 @@ import (
 	erc20Keeper "github.com/evmos/evmos/v20/x/erc20/keeper"
 	"github.com/evmos/evmos/v20/x/evm/core/vm"
 	"github.com/evmos/evmos/v20/x/evm/types"
-	transferkeeper "github.com/evmos/evmos/v20/x/ibc/transfer/keeper"
 	stakingkeeper "github.com/evmos/evmos/v20/x/staking/keeper"
 	vestingkeeper "github.com/evmos/evmos/v20/x/vesting/keeper"
 )
@@ -41,7 +40,7 @@ func NewAvailableStaticPrecompiles(
 	erc20Keeper erc20Keeper.Keeper,
 	vestingKeeper vestingkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
-	transferKeeper transferkeeper.Keeper,
+	transferKeeper ics20precompile.TransferKeeper,
 	channelKeeper channelkeeper.Keeper,
 	govKeeper govkeeper.Keeper,
 ) map[common.Address]vm.PrecompiledContract {

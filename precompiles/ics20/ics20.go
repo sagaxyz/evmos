@@ -15,7 +15,6 @@ import (
 	cmn "github.com/evmos/evmos/v20/precompiles/common"
 	"github.com/evmos/evmos/v20/x/evm/core/vm"
 	evmtypes "github.com/evmos/evmos/v20/x/evm/types"
-	transferkeeper "github.com/evmos/evmos/v20/x/ibc/transfer/keeper"
 	stakingkeeper "github.com/evmos/evmos/v20/x/staking/keeper"
 )
 
@@ -32,7 +31,7 @@ var f embed.FS
 type Precompile struct {
 	cmn.Precompile
 	stakingKeeper  stakingkeeper.Keeper
-	transferKeeper transferkeeper.Keeper
+	transferKeeper TransferKeeper
 	channelKeeper  channelkeeper.Keeper
 }
 
@@ -40,7 +39,7 @@ type Precompile struct {
 // PrecompiledContract interface.
 func NewPrecompile(
 	stakingKeeper stakingkeeper.Keeper,
-	transferKeeper transferkeeper.Keeper,
+	transferKeeper TransferKeeper,
 	channelKeeper channelkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
 ) (*Precompile, error) {
