@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	evmostypes "github.com/evmos/evmos/v19/types"
@@ -36,7 +37,9 @@ func InitGenesis(
 		panic("the EVM module account has not been set")
 	}
 
+	ctx.Logger().Info("x/evm genesis", "n Accounts", fmt.Sprintf("%d", len(data.Accounts)))
 	for _, account := range data.Accounts {
+		ctx.Logger().Info("x/evm genesis", "account", account.String())
 		address := common.HexToAddress(account.Address)
 		accAddress := sdk.AccAddress(address.Bytes())
 		// check that the EVM balance the matches the account balance
@@ -53,7 +56,13 @@ func InitGenesis(
 				),
 			)
 		}
-		code := common.Hex2Bytes(account.Code)
+		ctx.Logger().Info("x/evm genesis", "account code", account.Code)
+		code, err := hexutil.Decode(account.Code)
+		if err != nil {
+			panic(fmt.Errorf("failed to decode account code: %w", err))
+		}
+
+		ctx.Logger().Info("x/evm genesis", "code length decoded", len(code))
 		codeHash := crypto.Keccak256Hash(code)
 
 		// we ignore the empty Code hash checking, see ethermint PR#1234
@@ -63,6 +72,7 @@ func InitGenesis(
 				s, account.Address, codeHash, ethAcct.GetCodeHash(), account.Code))
 		}
 
+		ctx.Logger().Info("x/evm genesis", "code", string(code), "codehash", codeHash.String())
 		k.SetCode(ctx, codeHash.Bytes(), code)
 
 		for _, storage := range account.Storage {
