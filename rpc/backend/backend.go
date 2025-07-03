@@ -10,6 +10,7 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -133,6 +134,10 @@ type Backend struct {
 	cfg                 config.Config
 	allowUnprotectedTxs bool
 	indexer             evmostypes.EVMTxIndexer
+
+	// fallbackMsgParser is a function that can be used to parse a sdk.Msg to an evmtypes.MsgEthereumTx,
+	// it includes the execTxResult to allow access to events emitted by the transaction
+	fallbackMsgParser func(sdk.Msg, *abci.ExecTxResult) *evmtypes.MsgEthereumTx
 }
 
 // NewBackend creates a new Backend instance for cosmos and ethereum namespaces
@@ -169,4 +174,8 @@ func NewBackend(
 		allowUnprotectedTxs: allowUnprotectedTxs,
 		indexer:             indexer,
 	}
+}
+
+func (b *Backend) SetFallbackMsgParser(parser func(sdk.Msg, *abci.ExecTxResult) *evmtypes.MsgEthereumTx) {
+	b.fallbackMsgParser = parser
 }

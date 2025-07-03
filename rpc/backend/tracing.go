@@ -47,8 +47,18 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 		return nil, fmt.Errorf("transaction not included in block %v", blk.Block.Height)
 	}
 
+	// do not fetch block results if fallbackMsgParser is not set
+	var blockRes *tmrpctypes.ResultBlockResults
+	if b.fallbackMsgParser != nil {
+		blockRes, err = b.rpcClient.BlockResults(b.ctx, &blk.Block.Height)
+		if err != nil {
+			b.logger.Debug("block result not found", "height", blk.Block.Height, "error", err.Error())
+			return nil, nil
+		}
+	}
+
 	var predecessors []*evmtypes.MsgEthereumTx
-	for _, txBz := range blk.Block.Txs[:transaction.TxIndex] {
+	for i, txBz := range blk.Block.Txs[:transaction.TxIndex] {
 		tx, err := b.clientCtx.TxConfig.TxDecoder()(txBz)
 		if err != nil {
 			b.logger.Debug("failed to decode transaction in block", "height", blk.Block.Height, "error", err.Error())
@@ -57,7 +67,13 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 		for _, msg := range tx.GetMsgs() {
 			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 			if !ok {
-				continue
+				if b.fallbackMsgParser != nil {
+					ethMsg = b.fallbackMsgParser(msg, blockRes.TxsResults[i])
+				}
+
+				if ethMsg == nil {
+					continue
+				}
 			}
 
 			predecessors = append(predecessors, ethMsg)
@@ -73,17 +89,28 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 	// add predecessor messages in current cosmos tx
 	index := int(transaction.MsgIndex) // #nosec G701
 	for i := 0; i < index; i++ {
-		ethMsg, ok := tx.GetMsgs()[i].(*evmtypes.MsgEthereumTx)
+		msg := tx.GetMsgs()[i]
+		ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 		if !ok {
-			continue
+			if b.fallbackMsgParser != nil {
+				ethMsg = b.fallbackMsgParser(msg, blockRes.TxsResults[transaction.TxIndex])
+			}
+			if ethMsg == nil {
+				continue
+			}
 		}
 		predecessors = append(predecessors, ethMsg)
 	}
 
 	ethMessage, ok := tx.GetMsgs()[transaction.MsgIndex].(*evmtypes.MsgEthereumTx)
 	if !ok {
-		b.logger.Debug("invalid transaction type", "type", fmt.Sprintf("%T", tx))
-		return nil, fmt.Errorf("invalid transaction type %T", tx)
+		if b.fallbackMsgParser != nil {
+			ethMessage = b.fallbackMsgParser(tx.GetMsgs()[transaction.MsgIndex], blockRes.TxsResults[transaction.TxIndex])
+		}
+		if ethMessage == nil {
+			b.logger.Debug("invalid transaction type", "type", fmt.Sprintf("%T", tx))
+			return nil, fmt.Errorf("invalid transaction type %T", tx)
+		}
 	}
 
 	nc, ok := b.clientCtx.Client.(tmrpcclient.NetworkClient)
@@ -148,6 +175,17 @@ func (b *Backend) TraceBlock(height rpctypes.BlockNumber,
 		return []*evmtypes.TxTraceResult{}, nil
 	}
 
+	// do not fetch block results if fallbackMsgParser is not set
+	var blockRes *tmrpctypes.ResultBlockResults
+	if b.fallbackMsgParser != nil {
+		var err error
+		blockRes, err = b.rpcClient.BlockResults(b.ctx, &block.Block.Height)
+		if err != nil {
+			b.logger.Debug("block result not found", "height", block.Block.Height, "error", err.Error())
+			return nil, nil
+		}
+	}
+
 	txDecoder := b.clientCtx.TxConfig.TxDecoder()
 
 	var txsMessages []*evmtypes.MsgEthereumTx
@@ -161,8 +199,12 @@ func (b *Backend) TraceBlock(height rpctypes.BlockNumber,
 		for _, msg := range decodedTx.GetMsgs() {
 			ethMessage, ok := msg.(*evmtypes.MsgEthereumTx)
 			if !ok {
-				// Just considers Ethereum transactions
-				continue
+				if b.fallbackMsgParser != nil {
+					ethMessage = b.fallbackMsgParser(msg, blockRes.TxsResults[i])
+				}
+				if ethMessage == nil {
+					continue
+				}
 			}
 			txsMessages = append(txsMessages, ethMessage)
 		}

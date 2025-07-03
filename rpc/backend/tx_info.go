@@ -36,27 +36,18 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 		return nil, err
 	}
 
-	tx, err := b.clientCtx.TxConfig.TxDecoder()(block.Block.Txs[res.TxIndex])
-	if err != nil {
-		return nil, err
-	}
-
-	// the `res.MsgIndex` is inferred from tx index, should be within the bound.
-	msg, ok := tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
-	if !ok {
-		return nil, errors.New("invalid ethereum tx")
-	}
-
 	blockRes, err := b.rpcClient.BlockResults(b.ctx, &block.Block.Height)
 	if err != nil {
 		b.logger.Debug("block result not found", "height", block.Block.Height, "error", err.Error())
 		return nil, nil
 	}
 
+	var msg *evmtypes.MsgEthereumTx
 	if res.EthTxIndex == -1 {
 		// Fallback to find tx index by iterating all valid eth transactions
 		msgs := b.EthMsgsFromTendermintBlock(block, blockRes)
 		for i := range msgs {
+			msg = msgs[i]
 			if msgs[i].Hash == hexTx {
 				if i > math.MaxInt32 {
 					return nil, errors.New("tx index overflow")
@@ -66,6 +57,12 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 			}
 		}
 	}
+
+	// The tx might not be an ethereum tx (and we don't have a fallback msg parser), so we need to return an error
+	if msg == nil {
+		return nil, errors.New("invalid ethereum tx")
+	}
+
 	// if we still unable to find the eth tx index, return error, shouldn't happen.
 	if res.EthTxIndex == -1 {
 		return nil, errors.New("can't find index of ethereum tx")
