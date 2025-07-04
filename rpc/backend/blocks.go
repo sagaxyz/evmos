@@ -266,7 +266,12 @@ func (b *Backend) EthMsgsFromTendermintBlock(
 		for _, msg := range tx.GetMsgs() {
 			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 			if !ok {
-				continue
+				if b.fallbackMsgParser != nil {
+					ethMsg = b.fallbackMsgParser(msg, txResults[i])
+				}
+				if ethMsg == nil {
+					continue
+				}
 			}
 
 			ethMsg.Hash = ethMsg.AsTransaction().Hash().Hex()

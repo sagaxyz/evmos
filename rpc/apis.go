@@ -7,6 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/ethereum/go-ethereum/rpc"
 
@@ -20,7 +21,9 @@ import (
 	"github.com/evmos/evmos/v20/rpc/namespaces/ethereum/txpool"
 	"github.com/evmos/evmos/v20/rpc/namespaces/ethereum/web3"
 	"github.com/evmos/evmos/v20/types"
+	evmtypes "github.com/evmos/evmos/v20/x/evm/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 )
 
@@ -187,6 +190,95 @@ func RegisterAPINamespace(ns string, creator APICreator) error {
 	if _, ok := apiCreators[ns]; ok {
 		return fmt.Errorf("duplicated api namespace %s", ns)
 	}
+	apiCreators[ns] = creator
+	return nil
+}
+
+// OverrideFallbackMsgParser overrides the fallback msg parser for all namespaces.
+func OverrideFallbackMsgParser(parser func(sdk.Msg, *abci.ExecTxResult) *evmtypes.MsgEthereumTx) {
+	// Override only the namespaces that create and use a backend
+	apiCreators[EthNamespace] = func(ctx *server.Context,
+		clientCtx client.Context,
+		tmWSClient *rpcclient.WSClient,
+		allowUnprotectedTxs bool,
+		indexer types.EVMTxIndexer,
+	) []rpc.API {
+		evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
+		evmBackend.SetFallbackMsgParser(parser)
+		return []rpc.API{
+			{
+				Namespace: EthNamespace,
+				Version:   apiVersion,
+				Service:   eth.NewPublicAPI(ctx.Logger, evmBackend),
+				Public:    true,
+			},
+			{
+				Namespace: EthNamespace,
+				Version:   apiVersion,
+				Service:   filters.NewPublicAPI(ctx.Logger, clientCtx, tmWSClient, evmBackend),
+				Public:    true,
+			},
+		}
+	}
+
+	apiCreators[PersonalNamespace] = func(ctx *server.Context,
+		clientCtx client.Context,
+		_ *rpcclient.WSClient,
+		allowUnprotectedTxs bool,
+		indexer types.EVMTxIndexer,
+	) []rpc.API {
+		evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
+		evmBackend.SetFallbackMsgParser(parser)
+		return []rpc.API{
+			{
+				Namespace: PersonalNamespace,
+				Version:   apiVersion,
+				Service:   personal.NewAPI(ctx.Logger, evmBackend),
+				Public:    false,
+			},
+		}
+	}
+
+	apiCreators[DebugNamespace] = func(ctx *server.Context,
+		clientCtx client.Context,
+		_ *rpcclient.WSClient,
+		allowUnprotectedTxs bool,
+		indexer types.EVMTxIndexer,
+	) []rpc.API {
+		evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
+		evmBackend.SetFallbackMsgParser(parser)
+		return []rpc.API{
+			{
+				Namespace: DebugNamespace,
+				Version:   apiVersion,
+				Service:   debug.NewAPI(ctx, evmBackend),
+				Public:    true,
+			},
+		}
+	}
+
+	apiCreators[MinerNamespace] = func(ctx *server.Context,
+		clientCtx client.Context,
+		_ *rpcclient.WSClient,
+		allowUnprotectedTxs bool,
+		indexer types.EVMTxIndexer,
+	) []rpc.API {
+		evmBackend := backend.NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, indexer)
+		evmBackend.SetFallbackMsgParser(parser)
+		return []rpc.API{
+			{
+				Namespace: MinerNamespace,
+				Version:   apiVersion,
+				Service:   miner.NewPrivateAPI(ctx, evmBackend),
+				Public:    false,
+			},
+		}
+	}
+}
+
+// OverrideAPINamespace overrides the API creator for a given namespace.
+// Warning: this function does not check if the namespace is already registered.
+func OverrideAPINamespace(ns string, creator APICreator) error {
 	apiCreators[ns] = creator
 	return nil
 }

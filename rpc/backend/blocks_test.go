@@ -10,12 +10,14 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/evmos/v20/rpc/backend/mocks"
 	ethrpc "github.com/evmos/evmos/v20/rpc/types"
 	utiltx "github.com/evmos/evmos/v20/testutil/tx"
@@ -1135,12 +1137,124 @@ func (suite *BackendTestSuite) TestGetEthBlockFromTendermint() {
 func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 	msgEthereumTx, bz := suite.buildEthereumTx()
 
+	bankSendMsg := &banktypes.MsgSend{
+		FromAddress: "cosmos1234567890",
+		ToAddress:   "cosmos1234567890",
+		Amount:      sdk.NewCoins(sdk.NewCoin("stake", math.NewInt(1000000000000000000))),
+	}
+	txBuilder := suite.backend.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder.SetMsgs(bankSendMsg)
+	bankSendTx := txBuilder.GetTx()
+	bankSendTxBz, err := suite.backend.clientCtx.TxConfig.TxEncoder()(bankSendTx)
+	suite.Require().NoError(err)
+
 	testCases := []struct {
 		name     string
 		resBlock *tmrpctypes.ResultBlock
 		blockRes *tmrpctypes.ResultBlockResults
 		expMsgs  []*evmtypes.MsgEthereumTx
+		setup    func()
 	}{
+		{
+			"bank send tx, no fallback parser configured",
+			&tmrpctypes.ResultBlock{
+				Block: cmttypes.MakeBlock(1, []cmttypes.Tx{bankSendTxBz}, nil, nil),
+			},
+			&tmrpctypes.ResultBlockResults{
+				TxsResults: []*types.ExecTxResult{{Code: 0, GasUsed: 0}},
+			},
+			[]*evmtypes.MsgEthereumTx(nil),
+			func() {},
+		},
+		{
+			"bank send tx, fallback parser configured",
+			&tmrpctypes.ResultBlock{
+				Block: cmttypes.MakeBlock(1, []cmttypes.Tx{bankSendTxBz}, nil, nil),
+			},
+			&tmrpctypes.ResultBlockResults{
+				TxsResults: []*types.ExecTxResult{{Code: 0, GasUsed: 0}},
+			},
+			[]*evmtypes.MsgEthereumTx{func() *evmtypes.MsgEthereumTx {
+				// Expected converted bank send to ERC20 transfer
+				fromAddr := common.HexToAddress("cosmos1234567890")
+				toAddr := common.HexToAddress("cosmos1234567890")
+				amount := math.NewInt(1000000000000000000).BigInt()
+
+				// Create ERC20 transfer call data
+				transferSig := crypto.Keccak256([]byte("transfer(address,uint256)"))[:4]
+				toBytes := common.LeftPadBytes(toAddr.Bytes(), 32)
+				amountBytes := common.LeftPadBytes(amount.Bytes(), 32)
+				callData := append(transferSig, toBytes...)
+				callData = append(callData, amountBytes...)
+
+				erc20ContractAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
+
+				ethTxParams := evmtypes.EvmTxArgs{
+					ChainID:  suite.backend.chainID,
+					Nonce:    uint64(0),
+					To:       &erc20ContractAddr,
+					Amount:   big.NewInt(0),
+					GasLimit: 100000,
+					GasPrice: big.NewInt(1),
+					Input:    callData,
+				}
+				ethTx := evmtypes.NewTx(&ethTxParams)
+				ethTx.From = fromAddr.Hex()
+				return ethTx
+			}()},
+			func() {
+				suite.backend.SetFallbackMsgParser(func(msg sdk.Msg, _ *types.ExecTxResult) *evmtypes.MsgEthereumTx {
+					// check that the message type matches
+					if sdk.MsgTypeURL(msg) == sdk.MsgTypeURL(bankSendMsg) {
+						// Convert bank send to ERC20 transfer
+						bankMsg, ok := msg.(*banktypes.MsgSend)
+						if !ok {
+							return nil
+						}
+
+						// Parse addresses
+						fromAddr := common.HexToAddress(bankMsg.FromAddress)
+						toAddr := common.HexToAddress(bankMsg.ToAddress)
+
+						// Get the amount (assuming first coin in the list)
+						if len(bankMsg.Amount) == 0 {
+							return nil
+						}
+						amount := bankMsg.Amount[0].Amount.BigInt()
+
+						// Create ERC20 transfer call data
+						// transfer(address to, uint256 amount)
+						transferSig := crypto.Keccak256([]byte("transfer(address,uint256)"))[:4]
+
+						// Encode the parameters: to address (32 bytes) + amount (32 bytes)
+						toBytes := common.LeftPadBytes(toAddr.Bytes(), 32)
+						amountBytes := common.LeftPadBytes(amount.Bytes(), 32)
+
+						callData := append(transferSig, toBytes...)
+						callData = append(callData, amountBytes...)
+
+						// Create ERC20 contract address (mock address for testing)
+						erc20ContractAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
+
+						// Create Ethereum transaction
+						ethTxParams := evmtypes.EvmTxArgs{
+							ChainID:  suite.backend.chainID,
+							Nonce:    uint64(0),
+							To:       &erc20ContractAddr,
+							Amount:   big.NewInt(0), // No ETH value, just contract call
+							GasLimit: 100000,
+							GasPrice: big.NewInt(1),
+							Input:    callData,
+						}
+						ethTx := evmtypes.NewTx(&ethTxParams)
+						ethTx.From = fromAddr.Hex()
+
+						return ethTx
+					}
+					return nil
+				})
+			},
+		},
 		{
 			"tx in not included in block - unsuccessful tx without ExceedBlockGasLimit error",
 			&tmrpctypes.ResultBlock{
@@ -1154,6 +1268,7 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 				},
 			},
 			[]*evmtypes.MsgEthereumTx(nil),
+			func() {},
 		},
 		{
 			"tx included in block - unsuccessful tx with ExceedBlockGasLimit error",
@@ -1169,6 +1284,7 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 				},
 			},
 			[]*evmtypes.MsgEthereumTx{msgEthereumTx},
+			func() {},
 		},
 		{
 			"pass",
@@ -1184,12 +1300,13 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 				},
 			},
 			[]*evmtypes.MsgEthereumTx{msgEthereumTx},
+			func() {},
 		},
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset test and queries
-
+			tc.setup()
 			msgs := suite.backend.EthMsgsFromTendermintBlock(tc.resBlock, tc.blockRes)
 			suite.Require().Equal(tc.expMsgs, msgs)
 		})
