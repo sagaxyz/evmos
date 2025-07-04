@@ -10,6 +10,7 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -1135,12 +1136,54 @@ func (suite *BackendTestSuite) TestGetEthBlockFromTendermint() {
 func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 	msgEthereumTx, bz := suite.buildEthereumTx()
 
+	bankSendMsg := &banktypes.MsgSend{
+		FromAddress: "cosmos1234567890",
+		ToAddress:   "cosmos1234567890",
+		Amount:      sdk.NewCoins(sdk.NewCoin("stake", math.NewInt(1000000000000000000))),
+	}
+	txBuilder := suite.backend.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder.SetMsgs(bankSendMsg)
+	bankSendTx := txBuilder.GetTx()
+	bankSendTxBz, err := suite.backend.clientCtx.TxConfig.TxEncoder()(bankSendTx)
+	suite.Require().NoError(err)
+
 	testCases := []struct {
 		name     string
 		resBlock *tmrpctypes.ResultBlock
 		blockRes *tmrpctypes.ResultBlockResults
 		expMsgs  []*evmtypes.MsgEthereumTx
+		setup    func()
 	}{
+		{
+			"bank send tx, no fallback parser configured",
+			&tmrpctypes.ResultBlock{
+				Block: cmttypes.MakeBlock(1, []cmttypes.Tx{bankSendTxBz}, nil, nil),
+			},
+			&tmrpctypes.ResultBlockResults{
+				TxsResults: []*types.ExecTxResult{{Code: 0, GasUsed: 0}},
+			},
+			[]*evmtypes.MsgEthereumTx(nil),
+			func() {},
+		},
+		{
+			"bank send tx, fallback parser configured",
+			&tmrpctypes.ResultBlock{
+				Block: cmttypes.MakeBlock(1, []cmttypes.Tx{bankSendTxBz}, nil, nil),
+			},
+			&tmrpctypes.ResultBlockResults{
+				TxsResults: []*types.ExecTxResult{{Code: 0, GasUsed: 0}},
+			},
+			[]*evmtypes.MsgEthereumTx{msgEthereumTx}, // NOT CORRECT, it's just to show that the fallback parser has been used
+			func() {
+				suite.backend.SetFallbackMsgParser(func(msg sdk.Msg, _ *types.ExecTxResult) *evmtypes.MsgEthereumTx {
+					// check that the message type matches
+					if sdk.MsgTypeURL(msg) == sdk.MsgTypeURL(bankSendMsg) {
+						return msgEthereumTx
+					}
+					return nil
+				})
+			},
+		},
 		{
 			"tx in not included in block - unsuccessful tx without ExceedBlockGasLimit error",
 			&tmrpctypes.ResultBlock{
@@ -1154,6 +1197,7 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 				},
 			},
 			[]*evmtypes.MsgEthereumTx(nil),
+			func() {},
 		},
 		{
 			"tx included in block - unsuccessful tx with ExceedBlockGasLimit error",
@@ -1169,6 +1213,7 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 				},
 			},
 			[]*evmtypes.MsgEthereumTx{msgEthereumTx},
+			func() {},
 		},
 		{
 			"pass",
@@ -1184,12 +1229,13 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 				},
 			},
 			[]*evmtypes.MsgEthereumTx{msgEthereumTx},
+			func() {},
 		},
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset test and queries
-
+			tc.setup()
 			msgs := suite.backend.EthMsgsFromTendermintBlock(tc.resBlock, tc.blockRes)
 			suite.Require().Equal(tc.expMsgs, msgs)
 		})

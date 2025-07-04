@@ -36,13 +36,28 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 		return nil, err
 	}
 
+	tx, err := b.clientCtx.TxConfig.TxDecoder()(block.Block.Txs[res.TxIndex])
+	if err != nil {
+		return nil, err
+	}
+
 	blockRes, err := b.rpcClient.BlockResults(b.ctx, &block.Block.Height)
 	if err != nil {
 		b.logger.Debug("block result not found", "height", block.Block.Height, "error", err.Error())
 		return nil, nil
 	}
 
-	var msg *evmtypes.MsgEthereumTx
+	// the `res.MsgIndex` is inferred from tx index, should be within the bound.
+	sdkMsg := tx.GetMsgs()[res.MsgIndex]
+	msg, ok := sdkMsg.(*evmtypes.MsgEthereumTx)
+	if !ok {
+		if b.fallbackMsgParser != nil {
+			msg = b.fallbackMsgParser(sdkMsg, blockRes.TxsResults[res.TxIndex])
+		} else {
+			return nil, errors.New("invalid ethereum tx")
+		}
+	}
+
 	if res.EthTxIndex == -1 {
 		// Fallback to find tx index by iterating all valid eth transactions
 		msgs := b.EthMsgsFromTendermintBlock(block, blockRes)
