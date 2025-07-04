@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/evmos/v20/rpc/backend/mocks"
 	ethrpc "github.com/evmos/evmos/v20/rpc/types"
 	utiltx "github.com/evmos/evmos/v20/testutil/tx"
@@ -1173,12 +1174,82 @@ func (suite *BackendTestSuite) TestEthMsgsFromTendermintBlock() {
 			&tmrpctypes.ResultBlockResults{
 				TxsResults: []*types.ExecTxResult{{Code: 0, GasUsed: 0}},
 			},
-			[]*evmtypes.MsgEthereumTx{msgEthereumTx}, // NOT CORRECT, it's just to show that the fallback parser has been used
+			[]*evmtypes.MsgEthereumTx{func() *evmtypes.MsgEthereumTx {
+				// Expected converted bank send to ERC20 transfer
+				fromAddr := common.HexToAddress("cosmos1234567890")
+				toAddr := common.HexToAddress("cosmos1234567890")
+				amount := math.NewInt(1000000000000000000).BigInt()
+
+				// Create ERC20 transfer call data
+				transferSig := crypto.Keccak256([]byte("transfer(address,uint256)"))[:4]
+				toBytes := common.LeftPadBytes(toAddr.Bytes(), 32)
+				amountBytes := common.LeftPadBytes(amount.Bytes(), 32)
+				callData := append(transferSig, toBytes...)
+				callData = append(callData, amountBytes...)
+
+				erc20ContractAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
+
+				ethTxParams := evmtypes.EvmTxArgs{
+					ChainID:  suite.backend.chainID,
+					Nonce:    uint64(0),
+					To:       &erc20ContractAddr,
+					Amount:   big.NewInt(0),
+					GasLimit: 100000,
+					GasPrice: big.NewInt(1),
+					Input:    callData,
+				}
+				ethTx := evmtypes.NewTx(&ethTxParams)
+				ethTx.From = fromAddr.Hex()
+				return ethTx
+			}()},
 			func() {
 				suite.backend.SetFallbackMsgParser(func(msg sdk.Msg, _ *types.ExecTxResult) *evmtypes.MsgEthereumTx {
 					// check that the message type matches
 					if sdk.MsgTypeURL(msg) == sdk.MsgTypeURL(bankSendMsg) {
-						return msgEthereumTx
+						// Convert bank send to ERC20 transfer
+						bankMsg, ok := msg.(*banktypes.MsgSend)
+						if !ok {
+							return nil
+						}
+
+						// Parse addresses
+						fromAddr := common.HexToAddress(bankMsg.FromAddress)
+						toAddr := common.HexToAddress(bankMsg.ToAddress)
+
+						// Get the amount (assuming first coin in the list)
+						if len(bankMsg.Amount) == 0 {
+							return nil
+						}
+						amount := bankMsg.Amount[0].Amount.BigInt()
+
+						// Create ERC20 transfer call data
+						// transfer(address to, uint256 amount)
+						transferSig := crypto.Keccak256([]byte("transfer(address,uint256)"))[:4]
+
+						// Encode the parameters: to address (32 bytes) + amount (32 bytes)
+						toBytes := common.LeftPadBytes(toAddr.Bytes(), 32)
+						amountBytes := common.LeftPadBytes(amount.Bytes(), 32)
+
+						callData := append(transferSig, toBytes...)
+						callData = append(callData, amountBytes...)
+
+						// Create ERC20 contract address (mock address for testing)
+						erc20ContractAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
+
+						// Create Ethereum transaction
+						ethTxParams := evmtypes.EvmTxArgs{
+							ChainID:  suite.backend.chainID,
+							Nonce:    uint64(0),
+							To:       &erc20ContractAddr,
+							Amount:   big.NewInt(0), // No ETH value, just contract call
+							GasLimit: 100000,
+							GasPrice: big.NewInt(1),
+							Input:    callData,
+						}
+						ethTx := evmtypes.NewTx(&ethTxParams)
+						ethTx.From = fromAddr.Hex()
+
+						return ethTx
 					}
 					return nil
 				})
