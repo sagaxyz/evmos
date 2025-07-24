@@ -31,7 +31,7 @@ func NewGenesisState(params Params, pairs []TokenPair) GenesisState {
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		Params:     DefaultParams(),
-		TokenPairs: DefaultTokenPairs,
+		TokenPairs: []TokenPair{},
 	}
 }
 
