@@ -133,6 +133,8 @@ type Backend struct {
 	cfg                 config.Config
 	allowUnprotectedTxs bool
 	indexer             evmostypes.EVMTxIndexer
+
+	feePayer *feePayer
 }
 
 // NewBackend creates a new Backend instance for cosmos and ethereum namespaces
@@ -169,4 +171,22 @@ func NewBackend(
 		allowUnprotectedTxs: allowUnprotectedTxs,
 		indexer:             indexer,
 	}
+}
+
+func (b *Backend) AddFeePayer(feePayerPrivKey string) error {
+	if feePayerPrivKey == "" {
+		panic("empty fp private key")
+	}
+	if b.feePayer != nil {
+		panic("fee payer already added")
+	}
+
+	var err error
+	b.feePayer, err = newFeePayer(b.ctx, b.clientCtx, b.queryClient, b.logger, feePayerPrivKey)
+	if err != nil {
+		return err
+	}
+	go b.feePayer.Worker()
+
+	return nil
 }

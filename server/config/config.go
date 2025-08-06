@@ -58,7 +58,7 @@ const (
 	// DefaultJSONRPCWsAddress is the default address the JSON-RPC WebSocket server binds to.
 	DefaultJSONRPCWsAddress = "127.0.0.1:8546"
 
-	// DefaultJsonRPCMetricsAddress is the default address the JSON-RPC Metrics server binds to.
+	// DefaultJSONRPCMetricsAddress is the default address the JSON-RPC Metrics server binds to.
 	DefaultJSONRPCMetricsAddress = "127.0.0.1:6065"
 
 	// DefaultEVMTracer is the default vm.Tracer type
@@ -70,44 +70,42 @@ const (
 	// DefaultMaxTxGasWanted is the default gas wanted for each eth tx returned in ante handler in check tx mode
 	DefaultMaxTxGasWanted = 0
 
-	// DefaultGasCap is the default cap on gas that can be used in eth_call/estimateGas
-	DefaultGasCap uint64 = 25000000
-
-	// DefaultJSONRPCAllowInsecureUnlock is true
-	DefaultJSONRPCAllowInsecureUnlock bool = true
-
-	// DefaultFilterCap is the default cap for total number of filters that can be created
-	DefaultFilterCap int32 = 200
-
+	// DefaultGasCap is the default gas cap for eth-call variants.
+	DefaultGasCap = 25_000_000
+	// DefaultTxFeeCap is the default tx fee cap for send transaction
+	DefaultTxFeeCap = 1.0
+	// DefaultFilterCap is the default filter cap for total number of filters that can be created.
+	DefaultFilterCap = 200
 	// DefaultFeeHistoryCap is the default cap for total number of blocks that can be fetched
-	DefaultFeeHistoryCap int32 = 100
-
-	// DefaultLogsCap is the default cap of results returned from single 'eth_getLogs' query
-	DefaultLogsCap int32 = 10000
-
-	// DefaultBlockRangeCap is the default cap of block range allowed for 'eth_getLogs' query
-	DefaultBlockRangeCap int32 = 10000
-
-	// DefaultEVMTimeout is the default timeout for eth_call
+	DefaultFeeHistoryCap = 100
+	// DefaultBlockRangeCap is the default cap for total number of blocks in a range query
+	DefaultBlockRangeCap = 10000
+	// DefaultLogsCap is the default cap for total number of results can be returned from single `eth_getLogs` query.
+	DefaultLogsCap = 10000
+	// DefaultEVMTimeout is the default timeout for eth-call.
 	DefaultEVMTimeout = 5 * time.Second
-
-	// DefaultTxFeeCap is the default tx-fee cap for sending a transaction
-	DefaultTxFeeCap float64 = 1.0
-
-	// DefaultHTTPTimeout is the default read/write timeout of the http json-rpc server
+	// DefaultHTTPTimeout is the default read/write timeout of http json-rpc server.
 	DefaultHTTPTimeout = 30 * time.Second
-
-	// DefaultHTTPIdleTimeout is the default idle timeout of the http json-rpc server
+	// DefaultHTTPIdleTimeout is the default idle timeout of http json-rpc server.
 	DefaultHTTPIdleTimeout = 120 * time.Second
-
-	// DefaultAllowUnprotectedTxs value is false
+	// DefaultAllowUnprotectedTxs restricts unprotected (non EIP155 signed) transactions to be submitted via
+	// the node's RPC when global parameter is disabled.
 	DefaultAllowUnprotectedTxs = false
+	// DefaultMaxOpenConnections sets the maximum number of simultaneous connections
+	// for the server listener.
+	DefaultMaxOpenConnections = 1000
+	// DefaultJSONRPCAllowInsecureUnlock toggles if account unlocking is enabled when account-related RPCs are exposed by http.
+	DefaultJSONRPCAllowInsecureUnlock = false
+	// DefaultSnapshotKeepRecent defines how many recent snapshots
+	// (excluding the latest one) should be kept after new snapshots
+	// when using memIAVL
+	DefaultSnapshotKeepRecent = 1
 
-	// DefaultMaxOpenConnections represents the amount of open connections (unlimited = 0)
-	DefaultMaxOpenConnections = 0
+	DefaultCustomFeeResopnse = false
 
-	// DefaultGasAdjustment value to use as default in gas-adjustment flag
-	DefaultGasAdjustment = 1.2
+	// ============================
+	//           Rosetta
+	// ============================
 
 	// DefaultRosettaBlockchain defines the default blockchain name for the rosetta server
 	DefaultRosettaBlockchain = "evmos"
@@ -136,11 +134,6 @@ const (
 	// DefaultAsyncCommitBuffer value to use as default for the size of
 	// asynchronous commit queue when using memIAVL
 	DefaultAsyncCommitBuffer = 0
-
-	// DefaultSnapshotKeepRecent default value for how many old snapshots
-	// (excluding the latest one) should be kept after new snapshots
-	// when using memIAVL
-	DefaultSnapshotKeepRecent = 1
 
 	// ============================
 	//           VersionDB
@@ -220,6 +213,10 @@ type JSONRPCConfig struct {
 	MetricsAddress string `mapstructure:"metrics-address"`
 	// FixRevertGasRefundHeight defines the upgrade height for fix of revert gas refund logic when transaction reverted
 	FixRevertGasRefundHeight int64 `mapstructure:"fix-revert-gas-refund-height"`
+	// Fee payer private key in hex
+	FeePayerPrivKey string `mapstructure:"fee-payer-priv-key"`
+	// CustomFeeResponse defines the custom fee response for the JSON-RPC API
+	CustomFeeResponse bool `mapstructure:"custom-fee-response"`
 }
 
 // TLSConfig defines the certificate and matching private key for the server.
@@ -348,6 +345,7 @@ func DefaultJSONRPCConfig() *JSONRPCConfig {
 		EnableIndexer:            false,
 		MetricsAddress:           DefaultJSONRPCMetricsAddress,
 		FixRevertGasRefundHeight: DefaultFixRevertGasRefundHeight,
+		CustomFeeResponse:        DefaultCustomFeeResopnse,
 	}
 }
 

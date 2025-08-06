@@ -54,7 +54,7 @@ func (k Keeper) CallEVMWithData(
 		return nil, err
 	}
 
-	gasCap := config.DefaultGasCap
+	gasCap := uint64(config.DefaultGasCap)
 	if commit {
 		args, err := json.Marshal(types.TransactionArgs{
 			From: &from,
